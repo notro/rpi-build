@@ -77,12 +77,20 @@ def main(argv):
 
 	if "extra" in argv:
 		begin("extra")
+
+		# gpio_mouse_device, gpio_keys_device
 		git_clone("https://github.com/notro/fbtft_tools", WORKDIR + "/fbtft_tools")
 		git_pull(WORKDIR + "/fbtft_tools")
-
 		for mod in ["gpio_mouse_device", "gpio_keys_device"]:
 			make(kernel_src, "M=%s/fbtft_tools/%s modules" % (WORKDIR, mod))
 			make(kernel_src, "M=%s/fbtft_tools/%s INSTALL_MOD_PATH=%s modules_install" % (WORKDIR, mod, modules_tmp))
+
+		# ServoBlaster
+		git_clone("https://github.com/richardghirst/PiBits", WORKDIR + "/PiBits")
+		git_pull(WORKDIR + "/PiBits")
+		make(kernel_src, "M=%s/PiBits/ServoBlaster modules" % WORKDIR)
+		make(kernel_src, "M=%s/PiBits/ServoBlaster INSTALL_MOD_PATH=%s modules_install" % (WORKDIR, modules_tmp))
+
 		end()
 
 	if "update" in argv:
@@ -109,17 +117,20 @@ Build scripts used: https://github.com/notro/rpi-build
 This particular commit is based on:
 
 """
-		fw_commit = sh_output("git ls-remote -h https://github.com/raspberrypi/firmware refs/heads/master").strip().split()[0]
-		md += "* Standard firmware revision: https://github.com/raspberrypi/firmware/tree/%s\n" % fw_commit
+		commit = sh_output("git ls-remote -h https://github.com/raspberrypi/firmware refs/heads/master").strip().split()[0]
+		md += "* Firmware: https://github.com/raspberrypi/firmware/tree/%s\n" % commit
 
 		commit = sh_output("cd %s && git rev-parse HEAD" % kernel_src).strip().split()[0]
 		md += "* Linux kernel source: https://github.com/raspberrypi/linux/tree/%s\n" % commit
 
-		fbtft_commit = sh_output("cd %s/drivers/video/fbtft && git rev-parse HEAD" % kernel_src).strip().split()[0]
-		md += "* FBTFT source: https://github.com/notro/fbtft/tree/%s\n" % fbtft_commit
+		commit = sh_output("cd %s/drivers/video/fbtft && git rev-parse HEAD" % kernel_src).strip().split()[0]
+		md += "* FBTFT source: https://github.com/notro/fbtft/tree/%s\n" % commit
 
-		fbtft_tools_commit = sh_output("cd %s/fbtft_tools && git rev-parse HEAD" % WORKDIR).strip().split()[0]
-		md += "* gpio_*_device source: https://github.com/notro/fbtft_tools/tree/%s\n" % fbtft_tools_commit
+		commit = sh_output("cd %s/fbtft_tools && git rev-parse HEAD" % WORKDIR).strip().split()[0]
+		md += "* gpio_*_device source: https://github.com/notro/fbtft_tools/tree/%s\n" % commit
+
+		commit = sh_output("cd %s/PiBits && git rev-parse HEAD" % WORKDIR).strip().split()[0]
+		md += "* ServoBlaster source: https://github.com/richardghirst/PiBits/tree/%s\n" % commit
 
 		md += """
 
@@ -168,12 +179,15 @@ def get_firmware(repo_short):
 	if current_hash == last_hash:
 		return False
 
+	rm_rf("%s/tarball" % WORKDIR)
+	rm_rf("%s/firmware" % WORKDIR)
+	sh("wget --progress=dot:mega --directory-prefix=%s/ %s" % (WORKDIR, tarball))
+	sh("tar -C %s -zxf tarball" % WORKDIR)
+	sh("cd %s && mv raspberrypi-firmware* firmware" % WORKDIR)
+
 	with open(hash_file, 'w') as f:
 		f.write(current_hash)
 
-	sh("wget --directory-prefix=%s/ %s" % (WORKDIR, tarball))
-	sh("tar -C %s -zxf tarball" % WORKDIR)
-	sh("cd %s && mv raspberrypi-firmware* firmware" % WORKDIR)
 	return True
 
 def get_kernel(repo, path, branch, commit):
