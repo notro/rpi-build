@@ -105,34 +105,40 @@ notro/rpi-firmware
 
 Raspberry Pi kernel and firmware with support for FBTFT.
 
-This kernel provides drivers and modules in addition to the ones provided by the default kernel:
-* FBTFT drivers
-* All console fonts
-* ads7846, gpio_mouse, gpio_keyboard, gpio_keyboard_polled
-* gpio_mouse_device, gpio_keys_device
-* spi-bcm2708: removed roundup_pow_of_two() limitation
+**How to install**
+```
+sudo mv /lib/modules/$(uname -r) /lib/modules/$(uname -r).bak
+sudo REPO_URI=https://github.com/notro/ftest rpi-update
+```
+The first command is needed because of this [issue](https://github.com/Hexxeh/rpi-update/issues/106)
 
-Build scripts used: https://github.com/notro/rpi-build
+Build scripts used: https://github.com/notro/rpi-build  
+Build logs in the [extra/](https://github.com/notro/ftest/tree/master/extra) directory
 
-This particular commit is based on:
+### Sources
 
 """
 		commit = sh_output("git ls-remote -h https://github.com/raspberrypi/firmware refs/heads/master").strip().split()[0]
-		md += "* Firmware: https://github.com/raspberrypi/firmware/tree/%s\n" % commit
+		md += "* Firmware  \nhttps://github.com/raspberrypi/firmware/tree/%s\n" % commit
 
 		commit = sh_output("cd %s && git rev-parse HEAD" % kernel_src).strip().split()[0]
-		md += "* Linux kernel source: https://github.com/raspberrypi/linux/tree/%s\n" % commit
+		md += "* Linux kernel  \nhttps://github.com/raspberrypi/linux/tree/%s\n" % commit
 
 		commit = sh_output("cd %s/drivers/video/fbtft && git rev-parse HEAD" % kernel_src).strip().split()[0]
-		md += "* FBTFT source: https://github.com/notro/fbtft/tree/%s\n" % commit
+		md += "* FBTFT  \nhttps://github.com/notro/fbtft/tree/%s\n" % commit
 
 		commit = sh_output("cd %s/fbtft_tools && git rev-parse HEAD" % WORKDIR).strip().split()[0]
-		md += "* gpio_*_device source: https://github.com/notro/fbtft_tools/tree/%s\n" % commit
+		md += "* gpio_mouse_device, gpio_keys_device  \nhttps://github.com/notro/fbtft_tools/tree/%s\n" % commit
 
 		commit = sh_output("cd %s/PiBits && git rev-parse HEAD" % WORKDIR).strip().split()[0]
-		md += "* ServoBlaster source: https://github.com/richardghirst/PiBits/tree/%s\n" % commit
+		md += "* ServoBlaster  \nhttps://github.com/richardghirst/PiBits/tree/%s\n" % commit
 
 		md += """
+
+### Kernel source changes
+
+* spi-bcm2708.c: bcm2708_setup_state(): removed ```roundup_pow_of_two()``` limitation
+
 
 ### Kernel configuration changes
 
