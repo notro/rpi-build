@@ -13,7 +13,7 @@ def main(argv):
 	kernel_src = WORKDIR + "/linux"
 	kernel_branch = "rpi-3.6.y"
 	firmware_src = WORKDIR + "/firmware"
-	firmware_dst = WORKDIR + "/ftest"
+	firmware_dst = WORKDIR + "/rpi-firmware"
 	modules_tmp = WORKDIR + "/modules"
 
 	if "init" in argv:
@@ -105,15 +105,9 @@ notro/rpi-firmware
 
 Raspberry Pi kernel and firmware with support for FBTFT.
 
-**How to install**
-```
-sudo mv /lib/modules/$(uname -r) /lib/modules/$(uname -r).bak
-sudo REPO_URI=https://github.com/notro/ftest rpi-update
-```
-The first command is needed because of this [issue](https://github.com/Hexxeh/rpi-update/issues/106)
 
 Build scripts used: https://github.com/notro/rpi-build  
-Build logs in the [extra/](https://github.com/notro/ftest/tree/master/extra) directory
+Build logs in the [extra/](https://github.com/notro/rpi-firmware/tree/master/extra) directory
 
 ### Sources
 
@@ -225,6 +219,8 @@ def update_repo(src, dst, ksrc, msrc):
 	mkdir_p(dst + "/vc/sdk/opt/vc")
 	cp_a(src + "/opt/vc/include/", dst + "/vc/sdk/opt/vc/")
 	cp_a(src + "/opt/vc/src/",  dst + "/vc/sdk/opt/vc/")
+	# delete due to size 30MB
+	rm_rf(dst + "/vc/sdk/opt/vc/src/hello_pi/hello_video/test.h264")
 
 	mkdir_p(dst + "/vc/softfp/opt/vc")
 	cp_a(src + "/opt/vc/LICENCE", dst + "/vc/softfp/opt/vc")

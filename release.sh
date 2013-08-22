@@ -5,7 +5,7 @@ set -o errexit
 
 WORKDIR=${HOME}
 
-REPODIR=${WORKDIR}/ftest
+REPODIR=${WORKDIR}/rpi-firmware
 
 DIR=$(dirname "$0")
 
