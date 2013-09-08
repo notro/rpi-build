@@ -78,18 +78,21 @@ def main(argv):
 	if "extra" in argv:
 		begin("extra")
 
-		# gpio_mouse_device, gpio_keys_device
 		git_clone("https://github.com/notro/fbtft_tools", WORKDIR + "/fbtft_tools")
 		git_pull(WORKDIR + "/fbtft_tools")
-		for mod in ["gpio_mouse_device", "gpio_keys_device"]:
+		for mod in ["gpio_mouse_device", "gpio_keys_device", "ads7846_device"]:
 			make(kernel_src, "M=%s/fbtft_tools/%s modules" % (WORKDIR, mod))
 			make(kernel_src, "M=%s/fbtft_tools/%s INSTALL_MOD_PATH=%s modules_install" % (WORKDIR, mod, modules_tmp))
 
 		# ServoBlaster
-		git_clone("https://github.com/richardghirst/PiBits", WORKDIR + "/PiBits")
-		git_pull(WORKDIR + "/PiBits")
-		make(kernel_src, "M=%s/PiBits/ServoBlaster modules" % WORKDIR)
-		make(kernel_src, "M=%s/PiBits/ServoBlaster INSTALL_MOD_PATH=%s modules_install" % (WORKDIR, modules_tmp))
+		pibits = WORKDIR + "/PiBits"
+		git_clone("https://github.com/richardghirst/PiBits", pibits)
+		git_checkout(pibits, '-- .')
+		git_pull(pibits)
+		print("\nBuild ServoBlaster kernel module for board revision 2\n")
+		sh("sed -i '1s/^/#define REV_2\\n/' %s/ServoBlaster/kernel/servoblaster.c" % pibits)
+		make(kernel_src, "M=%s/ServoBlaster/kernel modules" % pibits)
+		make(kernel_src, "M=%s/ServoBlaster/kernel INSTALL_MOD_PATH=%s modules_install" % (pibits, modules_tmp))
 
 		end()
 
