@@ -7,6 +7,7 @@ import time
 
 WORKDIR = os.getenv('WORKDIR', os.environ['HOME'])
 CCPREFIX = os.getenv('CCPREFIX', WORKDIR + "/tools/arm-bcm2708/arm-bcm2708-linux-gnueabi/bin/arm-bcm2708-linux-gnueabi-")
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def main(argv):
@@ -21,46 +22,53 @@ def main(argv):
 		git_clone("https://github.com/raspberrypi/tools", WORKDIR + "/tools")
 		git_pull(WORKDIR + "/tools")
 
+		heading("Get firmware")
 		get_firmware("raspberrypi/firmware")
 
 		with open("%s/extra/git_hash" % firmware_src, 'r') as f:
 			commit = f.read()
 
+		heading("Get kernel source")
 		get_kernel("https://github.com/raspberrypi/linux", kernel_src, kernel_branch, commit)
 
-		# Remove speed limitation in spi-bcm2708
-		f = kernel_src + "/drivers/spi/spi-bcm2708.c"
-		pattern = "roundup_pow_of_two"
-		print("\nRemove '%s' line in '%s'" % (pattern, f))
-		sh("sed -i '/%s/d' %s" % (pattern, f))
-		#sh("sed -i '1s/^/#define DEBUG\\n/' %s" % (f))
+		heading("\nGet DMA capable SPI master driver")
+		sh("wget -O %s/drivers/spi/spi-bcm2708.c https://raw.github.com/notro/spi-bcm2708/master/spi-bcm2708.c" % kernel_src)
 
-		get_fbtft("https://github.com/notro/fbtft.git", kernel_src)
+		heading("Apply kernel patches")
+		for patch in os.listdir(SCRIPT_DIR + '/patches'):
+			git_apply(kernel_src, SCRIPT_DIR + '/patches/' + patch)
+
+		heading("\nGet FBTFT")
+		git_clone("https://github.com/notro/fbtft.git", "%s/drivers/video/fbtft" % kernel_src)
+		git_pull("%s/drivers/video/fbtft" % kernel_src)
+
 		end()
 
 	if "config" in argv:
 		begin("config")
+
+		heading("make mrproper")
 		make_mrproper(kernel_src)
 
-		# Get config from the Raspberry Pi standard kernel
+		heading("Get config from the Raspberry Pi standard kernel")
 		sh("%s/scripts/extract-ikconfig %s/boot/kernel.img > %s/.config" % (kernel_src, firmware_src, kernel_src))
 		cp_a("%s/.config" % kernel_src, "%s/.config.standard" % kernel_src)
 
-		# All FBTFT modules as modules
+		heading("Build all FBTFT modules as loadable modules")
 		make_oldconfig(kernel_src, 'm')
 
-		# Add all fonts as builtins
+		heading("Add all console fonts as builtins")
 		kernel_config(kernel_src, ["FONTS"], "y")
 		make_oldconfig(kernel_src, 'y')
 
-		# Add menuconfigs, no to sub configs
+		heading("Add touchscreen, mouse and keyboard support")
 		kernel_config(kernel_src, ["INPUT_TOUCHSCREEN", "INPUT_MOUSE", "INPUT_KEYBOARD"], "y")
 		make_oldconfig(kernel_src, 'n')
 
 		# Add some modules
 		kernel_config(kernel_src, ["TOUCHSCREEN_ADS7846", "MOUSE_GPIO", "KEYBOARD_GPIO", "KEYBOARD_GPIO_POLLED"], "m")
 
-		# Verify config
+		heading("Verify config")
 		make_oldconfig(kernel_src)
 		end()
 
@@ -84,12 +92,11 @@ def main(argv):
 			make(kernel_src, "M=%s/fbtft_tools/%s modules" % (WORKDIR, mod))
 			make(kernel_src, "M=%s/fbtft_tools/%s INSTALL_MOD_PATH=%s modules_install" % (WORKDIR, mod, modules_tmp))
 
-		# ServoBlaster
+		heading("Build ServoBlaster kernel module for board revision 2")
 		pibits = WORKDIR + "/PiBits"
 		git_clone("https://github.com/richardghirst/PiBits", pibits)
 		git_checkout(pibits, '-- .')
 		git_pull(pibits)
-		print("\nBuild ServoBlaster kernel module for board revision 2\n")
 		sh("sed -i '1s/^/#define REV_2\\n/' %s/ServoBlaster/kernel/servoblaster.c" % pibits)
 		make(kernel_src, "M=%s/ServoBlaster/kernel modules" % pibits)
 		make(kernel_src, "M=%s/ServoBlaster/kernel INSTALL_MOD_PATH=%s modules_install" % (pibits, modules_tmp))
@@ -112,6 +119,26 @@ Raspberry Pi kernel and firmware with support for FBTFT.
 Build scripts used: https://github.com/notro/rpi-build  
 Build logs in the [extra/](https://github.com/notro/rpi-firmware/tree/master/extra) directory
 
+
+### Install
+
+If [rpi-update](https://github.com/Hexxeh/rpi-update) is older than 12. august 2013, then it has to be manually updated first (or REPO_URI will be overwritten):
+```text
+sudo wget https://raw.github.com/Hexxeh/rpi-update/master/rpi-update -O /usr/bin/rpi-update && sudo chmod +x /usr/bin/rpi-update
+```
+
+Because of an [issue](https://github.com/Hexxeh/rpi-update/issues/106), the following command is needed when going from the vanilla kernel to this kernel (not needed on subsequent notro/rpi-firmware updates):
+```text
+sudo mv /lib/modules/$(uname -r) /lib/modules/$(uname -r).bak
+```
+
+**Install**
+```text
+sudo REPO_URI=https://github.com/notro/rpi-firmware rpi-update
+sudo shutdown -r now
+```
+
+
 ### Sources
 
 """
@@ -125,17 +152,26 @@ Build logs in the [extra/](https://github.com/notro/rpi-firmware/tree/master/ext
 		md += "* FBTFT  \nhttps://github.com/notro/fbtft/tree/%s\n" % commit
 
 		commit = sh_output("cd %s/fbtft_tools && git rev-parse HEAD" % WORKDIR).strip().split()[0]
-		md += "* gpio_mouse_device, gpio_keys_device  \nhttps://github.com/notro/fbtft_tools/tree/%s\n" % commit
+		md += "* [gpio_mouse_device](https://github.com/notro/fbtft_tools/wiki/gpio_mouse_device), "
+		md += "[gpio_keys_device](https://github.com/notro/fbtft_tools/wiki/gpio_keys_device), "
+		md += "[ads7846_device](https://github.com/notro/fbtft_tools/wiki/ads7846_device)  \n"
+		md += "https://github.com/notro/fbtft_tools/tree/%s\n" % commit
 
 		commit = sh_output("cd %s/PiBits && git rev-parse HEAD" % WORKDIR).strip().split()[0]
 		md += "* ServoBlaster  \nhttps://github.com/richardghirst/PiBits/tree/%s\n" % commit
 
+		commit = sh_output("cd %s/spi-bcm2708 && git rev-parse HEAD" % WORKDIR).strip().split()[0]
+		md += "* DMA capable SPI master driver [spi-bcm2708](https://github.com/notro/spi-bcm2708/wiki)  \nhttps://github.com/notro/spi-bcm2708/tree/%s\n" % commit
+
 		md += """
 
-### Kernel source changes
+### Kernel patches
 
-* spi-bcm2708.c: bcm2708_setup_state(): removed ```roundup_pow_of_two()``` limitation
+"""
+		for patch in os.listdir(SCRIPT_DIR + '/patches'):
+			md += "* [%s](https://github.com/notro/rpi-build/blob/master/patches/%s)\n" % (patch, patch)
 
+		md += """
 
 ### Kernel configuration changes
 
@@ -166,7 +202,6 @@ Build logs in the [extra/](https://github.com/notro/rpi-firmware/tree/master/ext
 
 
 
-# Return whether or not the firmware has changed since last run
 def get_firmware(repo_short):
 	tarball = "https://api.github.com/repos/%s/tarball" % repo_short
 	hash_file = WORKDIR + "/last_firmware_hash"
@@ -199,11 +234,6 @@ def get_kernel(repo, path, branch, commit):
 	git_checkout(path, branch)
 	git_pull(path)
 	git_checkout(path, commit)
-
-def get_fbtft(repo, path):
-	git_clone(repo, "%s/drivers/video/fbtft" % path)
-	git_pull("%s/drivers/video/fbtft" % path)
-	git_apply(path, WORKDIR + "/fbtft.patch")
 
 def modules_install(src, dst):
 	rm_rf(dst)
@@ -242,8 +272,6 @@ def update_repo(src, dst, ksrc, msrc):
 	cp_a(ksrc + "/System.map", dst + "/extra/")
 	cp_a(ksrc + "/.config", dst + "/extra/")
 
-	sh("ls -l %s" % dst)
-
 
 def begin(task):
 	begin.start = time.time()
@@ -253,6 +281,9 @@ def begin(task):
 def end():
 	t = time.time()
 	print("\n#\n# End: %s\n# Time: %s\n# Elapsed: %.2f min\n#\n" % (begin.task, time.ctime(t), (t - begin.start)/60))
+
+def heading(msg):
+	print("\n\n %s\n%s" % (msg, "-"*(len(msg)+2)))
 
 def kernel_config(path, vars, val):
 	if val == "n":
@@ -294,7 +325,7 @@ def git_checkout(path, ref):
 	sh("cd %s && git checkout %s" % (path, ref))
 	
 def git_apply(path, patch):
-	sh("cd %s && git apply %s" % (path, patch))
+	sh("cd %s && git apply -v %s" % (path, patch))
 
 # Alternative: http://amoffat.github.io/sh/
 def sh(cmd):
