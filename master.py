@@ -29,8 +29,6 @@ class Tasks(TasksBase):
 			self.__call__(task)
 
 	def task_init(self):
-		begin("init: Setup tools, firmware and kernel sources")
-
 		heading("Get build tools")
 		self.tools.clone()
 		self.tools.pull()
@@ -56,11 +54,7 @@ class Tasks(TasksBase):
 		self.fbtft.clone()
 		self.fbtft.pull()
 
-		end()
-
 	def task_config(self):
-		begin("config: Configure kernel")
-
 		heading("make mrproper")
 		self.linux.make.mrproper()
 
@@ -95,10 +89,7 @@ class Tasks(TasksBase):
 		self.linux.config(['CONFIG_CAN_MCP251X'], 'm')      # Microchip MCP251x SPI CAN controllers
 		self.linux.make.oldconfig()
 
-		end()
-
 	def task_extra(self):
-		begin("extra: Various out-of-tree kernel modules")
 		make = self.linux.make
 
 		mods = ["gpio_mouse_device", "gpio_keys_device", "ads7846_device"]
@@ -125,5 +116,3 @@ class Tasks(TasksBase):
 		modpath = self.spi_config.workdir
 		make.modules(modpath)
 		make.modules_install(self.modules_tmp, modpath)
-
-		end()

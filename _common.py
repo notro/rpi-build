@@ -20,7 +20,9 @@ class TasksBase:
 		except AttributeError:
 			print("No such task: %s" % task)
 			sys.exit(1)
+		begin(task)
 		func()
+		end()
 
 	def setup(self):
 		raise NotImplementedError
@@ -32,29 +34,22 @@ class TasksBase:
 		pass
 
 	def task_build(self):
-		begin("build: Build kernel")
 		nproc = int(sh_output("nproc").strip())
 		self.linux.make("-j%d" % (nproc * 2))
-		end()
 
 	def task_modules_install(self):
-		begin("modules_install: Install kernel modules")
 		rm_rf(self.modules_tmp)
 		mkdir_p(self.modules_tmp)
 		self.linux.make.modules_install(self.modules_tmp)
-		end()
 
 	def task_extra(self):
 		pass
 
 	def task_readme(self):
-		begin("readme: Generate README.md")
 		writef(self.readme.filename, self.readme.to_md())
 		print self.readme.to_md()
-		end()
 
 	def task_update_repo(self):
-		begin("update: Copy files to firmware repo")
 		src = self.firmware.workdir
 		dst = self.rpi_firmware.workdir
 		ksrc = self.linux.workdir
@@ -94,7 +89,6 @@ class TasksBase:
 		cp_a(ksrc + "/Module.symvers", dst + "/extra/")
 		cp_a(ksrc + "/System.map", dst + "/extra/")
 		cp_a(ksrc + "/.config", dst + "/extra/")
-		end()
 
 	def task_commit(self):
 		rpi_firmware_log = self.rpi_firmware.log("-1 --pretty=%s")
