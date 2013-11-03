@@ -12,7 +12,7 @@ class Tasks(TasksBase):
 		self.linux = Linux("https://github.com/raspberrypi/linux", self.workdir + "/linux", self.kernel_branch, self.ccprefix)
 		self.spi_bcm2708 = WgetFile("https://raw.github.com/notro/spi-bcm2708/master/spi-bcm2708.c", "%s/drivers/spi/spi-bcm2708.c" % self.linux.workdir, desc="spi-bcm2708: DMA capable SPI master driver")
 		self.fbtft = Git("https://github.com/notro/fbtft.git", "%s/drivers/video/fbtft" % self.linux.workdir, desc="FBTFT")
-		self.patches = Patches("%s/patches/%s" % (self.scriptdir, self.branch))
+		self.patches = Patches("%s/patches/%s" % (self.scriptdir, self.branch), self.branch)
 
 		self.fbtft_tools = Git("https://github.com/notro/fbtft_tools", self.workdir + "/fbtft_tools", "Various SPI device adding modules")
 		self.servoblaster = Git("https://github.com/richardghirst/PiBits", self.workdir + "/PiBits", desc="ServoBlaster")

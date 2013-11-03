@@ -272,9 +272,10 @@ class WgetFile:
 
 
 class Patches:
-	def __init__(self, path):
+	def __init__(self, path, branch):
 		self.path = path
 		self.patches = [ "%s/%s" % (self.path, patch) for patch in os.listdir(self.path)]
+		self.branch = branch
 
 	def __iter__(self):
 		return iter(self.patches)
@@ -283,7 +284,7 @@ class Patches:
 		str = ""
 		for patch in self.patches:
 			patchname = os.path.split(patch)[1]
-			str += "* [%s](https://github.com/notro/rpi-build/blob/master/patches/%s)\n" % (patchname, patchname)
+			str += "* [%s](https://github.com/notro/rpi-build/blob/master/patches/%s/%s)\n" % (patchname, self.branch, patchname)
 		return str
 
 
