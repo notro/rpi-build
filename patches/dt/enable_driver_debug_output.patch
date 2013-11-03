@@ -1,0 +1,21 @@
+diff --git a/drivers/video/bcm2708_fb.c b/drivers/video/bcm2708_fb.c
+index c10c5ee..aea607b 100644
+--- a/drivers/video/bcm2708_fb.c
++++ b/drivers/video/bcm2708_fb.c
+@@ -1,3 +1,6 @@
++#define DEBUG
++#define BCM2708_FB_DEBUG
++#define MODULE_NAME "bcm2708_fb"
+ /*
+  *  linux/drivers/video/bcm2708_fb.c
+  *
+diff --git a/sound/arm/bcm2835.c b/sound/arm/bcm2835.c
+index d5ad830..879bde6 100755
+--- a/sound/arm/bcm2835.c
++++ b/sound/arm/bcm2835.c
+@@ -1,3 +1,5 @@
++#define AUDIO_DEBUG_ENABLE
++#define AUDIO_VERBOSE_DEBUG_ENABLE
+ /*****************************************************************************
+ * Copyright 2011 Broadcom Corporation.  All rights reserved.
+ *

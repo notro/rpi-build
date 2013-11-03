@@ -93,12 +93,16 @@ class TasksBase:
 	def task_commit(self):
 		rpi_firmware_log = self.rpi_firmware.log("-1 --pretty=%s")
 		linux_log = self.linux.repo.log("-1 --pretty=%s")
-		fbtft_log = self.fbtft.log("-1 --pretty=%s")
+		if hasattr(self, 'fbtft'):
+			fbtft_log = self.fbtft.log("-1 --pretty=%s")
+		else:
+			fbtft_log = ''
 		print("\n\n--------------------------------------------------------------\n\n")
 		print("Last commit messages:")
 		print("  rpi-firmware: '%s'" % rpi_firmware_log)
 		print("  Linux:        '%s'" % linux_log)
-		print("  fbtft:        '%s'" % fbtft_log)
+		if fbtft_log:
+			print("  fbtft:        '%s'" % fbtft_log)
 		print("\n\n")
 		print("cd %s" % self.rpi_firmware.workdir)
 		print("git add .")
