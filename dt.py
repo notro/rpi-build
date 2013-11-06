@@ -56,6 +56,10 @@ See [wiki](https://github.com/notro/rpi-firmware/wiki/Device-Tree) for more info
 		self.linux.config(["PROC_DEVICETREE"], "y")
 		self.linux.make.oldconfig()
 
+		heading("Enable Dynamic Debug")
+		self.linux.config(["DYNAMIC_DEBUG"], "y")
+		self.linux.make.oldconfig('')
+
 		heading("Turn some modules into builtins")
 		self.linux.config(["BCM2708_SPIDEV"], "n")
 		self.linux.config(["SPI_BCM2708"], "y")
@@ -81,8 +85,11 @@ See [wiki](https://github.com/notro/rpi-firmware/wiki/Device-Tree) for more info
 		TasksBase.task_update_repo(self)
 		cp_a(self.linux.workdir + "/arch/arm/boot/dts/*.dtb", self.rpi_firmware.workdir + "/")
 		pre_install = """
-echo "     Work around rpi-update issue #106 by deleting ${FW_MODPATH}/$(uname -r)/kernel"
-rm -rf "${FW_MODPATH}/$(uname -r)/kernel"
+echo "Work around rpi-update issue #106"
+find "${FW_REPOLOCAL}/modules" -mindepth 1 -maxdepth 1 -type d | while read DIR; do
+	BASEDIR=$(basename "${DIR}")
+	rm -vrf "${FW_MODPATH}/${BASEDIR}/kernel"
+done
 echo
 """
 		writef("%s/pre-install" % self.rpi_firmware.workdir, pre_install)

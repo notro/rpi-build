@@ -18,7 +18,7 @@ new file mode 100644
 +	};
 +
 +	chosen {
-+		bootargs = "debug dwc_otg.lpm_enable=0 console=ttyAMA0,115200 kgdboc=ttyAMA0,115200 console=tty1 root=/dev/mmcblk0p2 rootfstype=ext4 elevator=deadline rootwait";
++		bootargs = "dwc_otg.lpm_enable=0 console=ttyAMA0,115200 kgdboc=ttyAMA0,115200 console=tty1 root=/dev/mmcblk0p2 rootfstype=ext4 elevator=deadline rootwait                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  ";
 +	};
 +
 +	leds {
@@ -372,8 +372,7 @@ diff --git a/arch/arm/mach-bcm2708/pinctrl-bcm2708.c b/arch/arm/mach-bcm2708/pin
 new file mode 100644
 --- /dev/null
 +++ b/arch/arm/mach-bcm2708/pinctrl-bcm2708.c
-@@ -0,0 +1,728 @@
-+#define DEBUG
+@@ -0,0 +1,727 @@
 +/*
 + * Driver for Broadcom BCM2708 GPIO unit (pinctrl only)
 + *

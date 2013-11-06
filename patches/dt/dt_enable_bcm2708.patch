@@ -10,34 +10,6 @@ index f0895c5..014305d 100644
  dtb-$(CONFIG_ARCH_BCM2835) += bcm2835-rpi-b.dtb
  dtb-$(CONFIG_ARCH_BCM) += bcm11351-brt.dtb
  dtb-$(CONFIG_ARCH_DAVINCI) += da850-enbw-cmc.dtb \
-diff --git a/arch/arm/mach-bcm2708/Kconfig b/arch/arm/mach-bcm2708/Kconfig
-index 1dfd0a4..644e5b6 100644
---- a/arch/arm/mach-bcm2708/Kconfig
-+++ b/arch/arm/mach-bcm2708/Kconfig
-@@ -45,4 +45,23 @@ config BCM2708_SPIDEV
-         default y
- 		help 
- 			Binds spidev driver to the SPI0 master  
-+
-+config PINCTRL_BCM2708
-+	bool
-+	select PINMUX
-+	select PINCONF
-+
-+config BCM2708_DT
-+	bool "Use Device Tree"
-+	depends on MACH_BCM2708
-+        default n
-+	select NEED_MACH_GPIO_H
-+	select USE_OF
-+	select COMMON_CLK
-+	select COMMON_CLK_DEBUG
-+	select BCM2708_GPIO
-+	select PINCTRL
-+	select PINCTRL_BCM2708
-+	help 
-+	  Device Tree and pinctrl support
- endmenu
 diff --git a/arch/arm/mach-bcm2708/Makefile b/arch/arm/mach-bcm2708/Makefile
 index 0da162c..78386a2 100644
 --- a/arch/arm/mach-bcm2708/Makefile
@@ -47,6 +19,34 @@ index 0da162c..78386a2 100644
  dmaer_master-objs		:= dmaer.o vc_support.o
  
 +obj-$(CONFIG_PINCTRL_BCM2708)   += pinctrl-bcm2708.o
+diff --git a/arch/arm/mach-bcm2708/Kconfig b/arch/arm/mach-bcm2708/Kconfig
+index b85bb8d..0c09d5e 100644
+--- a/arch/arm/mach-bcm2708/Kconfig
++++ b/arch/arm/mach-bcm2708/Kconfig
+@@ -46,4 +46,23 @@ config BCM2708_DMAER
+         help
+           Enable DMA helper for accelerating X composition
+
++config PINCTRL_BCM2708
++	bool
++	select PINMUX
++	select PINCONF
++
++config BCM2708_DT
++	bool "Use Device Tree"
++	depends on MACH_BCM2708
++	default n
++	select NEED_MACH_GPIO_H
++	select USE_OF
++	select COMMON_CLK
++	select COMMON_CLK_DEBUG
++	select BCM2708_GPIO
++	select PINCTRL
++	select PINCTRL_BCM2708
++	help
++	  Device Tree and pinctrl support
++
+ endmenu
 diff --git a/arch/arm/mach-bcm2708/armctrl.c b/arch/arm/mach-bcm2708/armctrl.c
 index 274aa30..3e60999 100644
 --- a/arch/arm/mach-bcm2708/armctrl.c
@@ -262,13 +262,13 @@ index 5662c1a..2d0f706 100644
  MACHINE_START(BCM2708, "BCM2708")
      /* Maintainer: Broadcom Europe Ltd. */
  	.map_io = bcm2708_map_io,
-@@ -909,6 +974,7 @@ MACHINE_START(BCM2708, "BCM2708")
+@@ -913,6 +978,7 @@ MACHINE_START(BCM2708, "BCM2708")
  	.init_early = bcm2708_init_early,
+ 	.restart = bcm2708_restart,
  	.reserve = board_reserve,
- 	.restart	= bcm2708_restart,
-+	.dt_compat = bcm2708_compat
++	.dt_compat = bcm2708_compat,
  MACHINE_END
- 
+
  module_param(boardrev, uint, 0644);
 diff --git a/arch/arm/mach-bcm2708/clock.c b/arch/arm/mach-bcm2708/clock.c
 index 4fc556e..d4bae02 100644
