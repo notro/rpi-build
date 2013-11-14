@@ -191,6 +191,17 @@ class GithubTarball(Git):
 			f.write(current_hash)
 
 
+class GitLocal(Git):
+	def clone(self, branch=''):
+		if os.path.isdir(self.workdir):
+			print("\ngit.clone(%r, %r, %r)\nAlready cloned" % (self.repo, self.workdir, branch))
+			return
+		raise IOErrror("Directory missing: %s. Must be set up manually" % self.workdir)
+
+	def pull(self, branch=''):
+		pass
+
+
 class Make:
 	def __init__(self, dir, ccprefix=''):
 		self.dir = dir
@@ -228,10 +239,13 @@ class Make:
 
 class Linux:
 	def __init__(self, repo, workdir, branch='master', ccprefix='', desc="Linux Kernel"):
-		self.repo = repo
+		if type(repo) == type(''):
+			self.repo = Git(repo, workdir, desc)
+		else:
+			self.repo = repo
+			self.repo.desc = desc
 		self.workdir = workdir
 		self.branch = branch
-		self.repo = Git(repo, workdir, desc)
 		self.make = Make(workdir, ccprefix)
 
 	def update(self):
@@ -274,7 +288,12 @@ class WgetFile:
 class Patches:
 	def __init__(self, path, branch):
 		self.path = path
-		self.patches = [ "%s/%s" % (self.path, patch) for patch in os.listdir(self.path)]
+		self.patches = []
+		for patch in os.listdir(self.path):
+			filename = "%s/%s" % (self.path, patch)
+			if os.path.splitext(filename)[1] == '.patch':
+				self.patches.append(filename)
+		self.patches.sort()
 		self.branch = branch
 
 	def __iter__(self):
