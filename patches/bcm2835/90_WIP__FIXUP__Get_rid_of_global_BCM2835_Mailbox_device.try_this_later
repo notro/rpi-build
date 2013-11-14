@@ -1,0 +1,410 @@
+From 27d24b3b905214ceaa2bfef94b893038bfc2ee26 Mon Sep 17 00:00:00 2001
+From: Lubomir Rintel <lkundrak@v3.sk>
+Date: Thu, 13 Jun 2013 16:05:46 +0200
+Subject: [PATCH] WIP: FIXUP: Get rid of global BCM2835 Mailbox device
+
+---
+ drivers/cpufreq/bcm2835-cpufreq.c                  | 11 +++-
+ drivers/hwmon/bcm2835-hwmon.c                      | 15 ++++--
+ drivers/mailbox/bcm2835-ipc.c                      | 58 +++++++++++++---------
+ .../interface/vchiq_arm/vchiq_2835_arm.c           |  9 +++-
+ drivers/thermal/bcm2835-thermal.c                  | 11 +++-
+ drivers/video/bcm2835fb.c                          |  9 +++-
+ include/linux/mailbox.h                            |  5 +-
+ 7 files changed, 82 insertions(+), 36 deletions(-)
+
+diff --git a/drivers/cpufreq/bcm2835-cpufreq.c b/drivers/cpufreq/bcm2835-cpufreq.c
+index 2e48262..aaf79de 100644
+--- a/drivers/cpufreq/bcm2835-cpufreq.c
++++ b/drivers/cpufreq/bcm2835-cpufreq.c
+@@ -24,6 +24,7 @@
+ #include <linux/init.h>
+ #include <linux/module.h>
+ #include <linux/cpufreq.h>
++#include <linux/device.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/mailbox.h>
+ #include <linux/platform_device.h>
+@@ -52,6 +53,8 @@ struct vc_msg {
+ 	u32 end_tag;		/* an end identifier, should be set to NULL */
+ } __packed;
+ 
++static struct device *mbox;
++
+ /* clk_rate either gets or sets the clock rates.  */
+ static u32 bcm2835_cpufreq_set_clock(int cur_rate, int arm_rate)
+ {
+@@ -78,7 +81,7 @@ static u32 bcm2835_cpufreq_set_clock(int cur_rate, int arm_rate)
+ 	msg->tag.val = arm_rate * 1000;
+ 
+ 	/* send the message */
+-	ret = bcm2835_mbox_property(msg_bus);
++	ret = bcm2835_mbox_property(mbox, msg_bus);
+ 
+ 	/* check if it was all ok and return the rate in KHz */
+ 	if (ret == 0 && (msg->request_code & 0x80000000))
+@@ -111,7 +114,7 @@ static u32 bcm2835_cpufreq_get_clock(int tag)
+ 	msg->tag.dev_id = VCMSG_ID_ARM_CLOCK;
+ 
+ 	/* send the message */
+-	ret = bcm2835_mbox_property(msg_bus);
++	ret = bcm2835_mbox_property(mbox, msg_bus);
+ 
+ 	/* check if it was all ok and return the rate in KHz */
+ 	if (ret == 0 && (msg->request_code & 0x80000000))
+@@ -194,6 +197,10 @@ static int bcm2835_cpufreq_probe(struct platform_device *pdev)
+ 	int ret;
+ 	struct device *dev = &pdev->dev;
+ 
++	ret = bcm2835_mbox_init(&mbox);
++	if (ret != 0)
++		return ret;
++
+ 	ret = cpufreq_register_driver(&bcm2835_cpufreq);
+ 	if (ret) {
+ 		dev_err(dev, "Could not register cpufreq driver\n");
+diff --git a/drivers/hwmon/bcm2835-hwmon.c b/drivers/hwmon/bcm2835-hwmon.c
+index 494a172..5455abf 100644
+--- a/drivers/hwmon/bcm2835-hwmon.c
++++ b/drivers/hwmon/bcm2835-hwmon.c
+@@ -94,6 +94,7 @@ static ssize_t bcm2835_get_temp(struct device *dev,
+ 	dma_addr_t msg_bus;
+ 	struct vc_msg *msg;
+ 	int tag_id;
++	struct device *mbox = dev_get_drvdata(dev);
+ 
+ 	/* determine the message type */
+ 	if (index == TEMP)
+@@ -113,7 +114,7 @@ static ssize_t bcm2835_get_temp(struct device *dev,
+ 	msg->tag.buffer_size = 8;
+ 
+ 	/* send the message */
+-	result = bcm2835_mbox_property(msg_bus);
++	result = bcm2835_mbox_property(mbox, msg_bus);
+ 
+ 	/* check if it was all ok and return the rate in milli degrees C */
+ 	if (result == 0 && (msg->request_code & 0x80000000))
+@@ -128,14 +129,22 @@ static int bcm2835_hwmon_probe(struct platform_device *pdev)
+ {
+ 	struct device *dev = &pdev->dev;
+ 	struct device *hwmon_dev;
++	struct device *mbox;
++	int ret;
+ 
+-	/* create the sysfs files */
++	/* Initialize the mbox API */
++	ret = bcm2835_mbox_init(&mbox);
++	if (ret != 0)
++		return ret;
++	dev_set_drvdata(dev, mbox);
++
++	/* Create the sysfs files */
+ 	if (sysfs_create_group(&dev->kobj, &bcm2835_attr_group)) {
+ 		dev_err(dev, "Could not create sysfs group\n");
+ 		return -EFAULT;
+ 	}
+ 
+-	/* register the hwmon device */
++	/* Register the hwmon device */
+ 	hwmon_dev = hwmon_device_register(dev);
+ 	if (IS_ERR(hwmon_dev)) {
+ 		dev_err(dev, "Could not register hwmon device\n");
+diff --git a/drivers/mailbox/bcm2835-ipc.c b/drivers/mailbox/bcm2835-ipc.c
+index a59be00..5254fc5 100644
+--- a/drivers/mailbox/bcm2835-ipc.c
++++ b/drivers/mailbox/bcm2835-ipc.c
+@@ -54,10 +54,11 @@
+ #define MBOX_CHAN(msg)			((msg) & 0xf)
+ #define MBOX_DATA28(msg)		((msg) & ~0xf)
+ 
++static bool bcm2835_mbox_probed;
+ static struct device *bcm2835_mbox_dev;	/* we assume there's only one! */
+ 
+ struct bcm2835_mbox {
+-	struct device *dev;
++	//struct device *dev;
+ 	void __iomem *regs;
+ 	struct {
+ 		u32 msg;
+@@ -68,8 +69,8 @@ struct bcm2835_mbox {
+ 
+ static irqreturn_t bcm2835_mbox_irq(int irq, void *dev_id)
+ {
+-	struct bcm2835_mbox *mbox = (struct bcm2835_mbox *)dev_id;
+-	struct device *dev = mbox->dev;
++	struct device *dev = (struct device *)dev_id;
++	struct bcm2835_mbox *mbox = dev_get_drvdata(dev);
+ 	int ret = IRQ_NONE;
+ 
+ 	/* wait for the mailbox FIFO to have some data in it */
+@@ -96,6 +97,19 @@ static irqreturn_t bcm2835_mbox_irq(int irq, void *dev_id)
+ 	return ret;
+ }
+ 
++int bcm2835_mbox_init(struct device **dev)
++{
++	*dev = bcm2835_mbox_dev;
++
++	if (!bcm2835_mbox_probed)
++		return -EPROBE_DEFER;
++	if (!bcm2835_mbox_dev)
++		return -ENODEV;
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(bcm2835_mbox_init);
++
+ /**
+  * bcm2835_mbox_io() - send a message to BCM2835 mailbox and read a reply
+  * @chan:	Channel number
+@@ -113,25 +127,20 @@ static irqreturn_t bcm2835_mbox_irq(int irq, void *dev_id)
+  * Return: 0 in case of success, otherwise an error code
+  */
+ 
+-int bcm2835_mbox_io(unsigned chan, u32 in28, u32 *out28)
++int bcm2835_mbox_io(struct device *dev, unsigned chan, u32 in28, u32 *out28)
+ {
+-	struct bcm2835_mbox *mbox;
++	struct bcm2835_mbox *mbox = dev_get_drvdata(dev);
+ 	int timeout;
+ 	int ret = 0;
+ 
+-	if (!bcm2835_mbox_dev)
+-		return -ENODEV;
+-
+-	mbox = dev_get_drvdata(bcm2835_mbox_dev);
+-
+-	device_lock(bcm2835_mbox_dev);
++	device_lock(dev);
+ 	/* wait for the mailbox FIFO to have some space in it */
+ 	while (readl(mbox->regs + MAIL0_STA) & ARM_MS_FULL)
+ 		cpu_relax();
+ 
+ 	mutex_lock(&mbox->chan[chan].lock);
+ 	writel(MBOX_MSG(chan, in28), mbox->regs + MAIL0_WRT);
+-	device_unlock(bcm2835_mbox_dev);
++	device_unlock(dev);
+ 
+ 	/* Don't wait for a response. */
+ 	if (out28 == NULL)
+@@ -140,7 +149,7 @@ int bcm2835_mbox_io(unsigned chan, u32 in28, u32 *out28)
+ 	timeout = wait_for_completion_timeout(&mbox->chan[chan].comp,
+ 						BCM2835_MBOX_TIMEOUT);
+ 	if (timeout  == 0) {
+-		dev_warn(bcm2835_mbox_dev, "Channel %d timeout\n", chan);
++		dev_warn(dev, "Channel %d timeout\n", chan);
+ 		ret = -ETIMEDOUT;
+ 		goto out;
+ 	}
+@@ -165,16 +174,16 @@ int bcm2835_mbox_io(unsigned chan, u32 in28, u32 *out28)
+  * Return: 0 in case of success, otherwise an error code
+  */
+ 
+-int bcm2835_mbox_property(dma_addr_t mem_bus)
++int bcm2835_mbox_property(struct device *dev, dma_addr_t mem_bus)
+ {
+ 	int ret;
+ 	int val;
+ 
+ 	wmb();
+-	ret = bcm2835_mbox_io(MBOX_CHAN_PROPERTY, (u32)mem_bus, (u32 *)&val);
++	ret = bcm2835_mbox_io(dev, MBOX_CHAN_PROPERTY, (u32)mem_bus, (u32 *)&val);
+ 	rmb();
+ 	if (mem_bus != val) {
+-		dev_warn(bcm2835_mbox_dev, "Bad response from property mailbox\n");
++		dev_warn(dev, "Bad response from property mailbox\n");
+ 		return -EIO;
+ 	}
+ 
+@@ -194,6 +203,7 @@ static int bcm2835_mbox_probe(struct platform_device *pdev)
+ 	mbox = devm_kzalloc(dev, sizeof(*mbox), GFP_KERNEL);
+ 	if (mbox == NULL) {
+ 		dev_err(dev, "Failed to allocate mailbox memory\n");
++		bcm2835_mbox_probed = true;
+ 		return -ENOMEM;
+ 	}
+ 
+@@ -205,23 +215,26 @@ static int bcm2835_mbox_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	platform_set_drvdata(pdev, mbox);
+-	mbox->dev = dev;
++	dev_set_drvdata(dev, mbox);
+ 
+ 	irq = irq_of_parse_and_map(np, 0);
+ 	if (irq <= 0) {
+ 		dev_err(dev, "Can't get IRQ number for mailbox\n");
++		bcm2835_mbox_probed = true;
+ 		return -ENODEV;
+ 	}
+ 	ret = devm_request_irq(dev, irq, bcm2835_mbox_irq, IRQF_SHARED,
+-						dev_name(dev), mbox);
++						dev_name(dev), dev);
+ 	if (ret) {
+ 		dev_err(dev, "Failed to register a mailbox IRQ handler\n");
++		bcm2835_mbox_probed = true;
+ 		return -ENODEV;
+ 	}
+ 
+ 	mbox->regs = of_iomap(np, 0);
+ 	if (!mbox->regs) {
+ 		dev_err(dev, "Failed to remap mailbox regs\n");
++		bcm2835_mbox_probed = true;
+ 		return -ENODEV;
+ 	}
+ 
+@@ -230,13 +243,16 @@ static int bcm2835_mbox_probe(struct platform_device *pdev)
+ 
+ 	dev_info(dev, "Broadcom BCM2835 mailbox IPC");
+ 	bcm2835_mbox_dev = dev;
++	bcm2835_mbox_probed = true;
+ 
+ 	return 0;
+ }
+ 
+ static int bcm2835_mbox_remove(struct platform_device *pdev)
+ {
++	bcm2835_mbox_probed = false;
+ 	bcm2835_mbox_dev = NULL;
++
+ 	return 0;
+ }
+ 
+@@ -257,12 +273,6 @@ static int bcm2835_mbox_remove(struct platform_device *pdev)
+ };
+ module_platform_driver(bcm2835_mbox_driver);
+ 
+-static int __init bcm2835_mbox_init(void)
+-{
+-	return platform_driver_register(&bcm2835_mbox_driver);
+-}
+-arch_initcall(bcm2835_mbox_init);
+-
+ MODULE_AUTHOR("Lubomir Rintel");
+ MODULE_DESCRIPTION("BCM2835 mailbox IPC driver");
+ MODULE_LICENSE("GPL v2");
+diff --git a/drivers/staging/vc04_services/interface/vchiq_arm/vchiq_2835_arm.c b/drivers/staging/vc04_services/interface/vchiq_arm/vchiq_2835_arm.c
+index 0a56d2e..0406509 100644
+--- a/drivers/staging/vc04_services/interface/vchiq_arm/vchiq_2835_arm.c
++++ b/drivers/staging/vc04_services/interface/vchiq_arm/vchiq_2835_arm.c
+@@ -102,9 +102,15 @@
+ 	int err;
+ 	int i;
+         struct device *dev = &pdev->dev;
++        struct device *mbox;
+         struct device_node *np = dev->of_node;
+ 	int irq;
+ 
++	err = bcm2835_mbox_init(&mbox);
++	if (err != 0)
++		return err;
++	dev_set_drvdata(dev, mbox);
++
+ 	/* Allocate space for the channels in coherent memory */
+ 	g_slot_mem_size = PAGE_ALIGN(TOTAL_SLOTS * VCHIQ_SLOT_SIZE);
+ 	frag_mem_size = PAGE_ALIGN(sizeof(FRAGMENTS_T) * MAX_FRAGMENTS);
+@@ -172,8 +178,7 @@
+ 
+ 	dsb(); /* Ensure all writes have completed */
+ 
+-	//bcm_mailbox_write(MBOX_CHAN_VCHIQ, (unsigned int)g_slot_phys);
+-	err = bcm2835_mbox_io(MBOX_CHAN_VCHIQ, (unsigned int)g_slot_phys | 0x40000000, NULL);
++	err = bcm2835_mbox_io(mbox, MBOX_CHAN_VCHIQ, (unsigned int)g_slot_phys | 0x40000000, NULL);
+ 	if (err < 0) {
+ 		dev_err(dev, "Missed acknowledgement\n");
+ 		err = -ENODEV;
+diff --git a/drivers/thermal/bcm2835-thermal.c b/drivers/thermal/bcm2835-thermal.c
+index 4937e6a..88d1581 100644
+--- a/drivers/thermal/bcm2835-thermal.c
++++ b/drivers/thermal/bcm2835-thermal.c
+@@ -48,6 +48,7 @@ static int bcm2835_thermal_get_temp_or_max(struct thermal_zone_device *thermal,
+ 	int result = -1, retry = 3;
+ 	dma_addr_t msg_bus;
+ 	struct bcm2835_msg *msg;
++	struct device *mbox = (struct device *)thermal->devdata;
+ 
+ 	msg = dma_alloc_coherent(NULL, PAGE_ALIGN(sizeof(*msg)), &msg_bus,
+ 								GFP_KERNEL);
+@@ -66,7 +67,7 @@ static int bcm2835_thermal_get_temp_or_max(struct thermal_zone_device *thermal,
+ 		msg->tag.tag_id = tag_id;
+ 
+ 		/* send the message */
+-		result = bcm2835_mbox_property(msg_bus);
++		result = bcm2835_mbox_property(mbox, msg_bus);
+ 		if (!(msg->request_code & 0x80000000))
+ 			result = -1;
+ 	}
+@@ -120,9 +121,15 @@ static int bcm2835_thermal_probe(struct platform_device *pdev)
+ {
+ 	struct thermal_zone_device *thermal;
+ 	struct device *dev = &pdev->dev;
++	struct device *mbox;
++	int ret;
++
++	ret = bcm2835_mbox_init(&mbox);
++	if (ret != 0)
++		return ret;
+ 
+ 	thermal = thermal_zone_device_register(
+-				"bcm2835_thermal", 1, 0, NULL,
++				"bcm2835_thermal", 1, 0, mbox,
+ 				&ops, NULL, 1000, 1000);
+ 	if (!thermal) {
+ 		dev_err(dev, "Unable to register the thermal device\n");
+diff --git a/drivers/video/bcm2835fb.c b/drivers/video/bcm2835fb.c
+index a0fb6d3f..9d7716e 100644
+--- a/drivers/video/bcm2835fb.c
++++ b/drivers/video/bcm2835fb.c
+@@ -44,6 +44,7 @@ struct fbinfo_s {
+ struct bcm2835_fb {
+ 	struct fb_info fb;
+ 	struct fbinfo_s *info;
++	struct device *mbox;
+ 	dma_addr_t dma;
+ 	u32 cmap[16];
+ };
+@@ -185,7 +186,7 @@ static int bcm2835_fb_set_par(struct fb_info *info)
+ 
+ 	/* ensure last write to fbinfo is visible to GPU */
+ 	wmb();
+-	ret = bcm2835_mbox_io(MBOX_CHAN_FB, TO_VC_PHYS(fb->dma), &val);
++	ret = bcm2835_mbox_io(fb->mbox, MBOX_CHAN_FB, TO_VC_PHYS(fb->dma), &val);
+ 	rmb();
+ 	if (ret != 0)
+ 		return ret;
+@@ -303,6 +304,7 @@ static void bcm2835_fb_imageblit(struct fb_info *info,
+ static int bcm2835_fb_probe(struct platform_device *pdev)
+ {
+ 	struct device *dev = &pdev->dev;
++	struct device *mbox;
+ 	struct bcm2835_fb *fb;
+ 	dma_addr_t dma;
+ 	void *mem;
+@@ -315,6 +317,11 @@ static int bcm2835_fb_probe(struct platform_device *pdev)
+ 	}
+ 	platform_set_drvdata(pdev, fb);
+ 
++	ret = bcm2835_mbox_init(&mbox);
++	if (ret != 0)
++		return ret;
++	fb->mbox = mbox;
++
+ 	mem = dmam_alloc_coherent(dev, PAGE_ALIGN(sizeof(*fb->info)),
+ 						&dma, GFP_KERNEL);
+ 	if (!mem) {
+diff --git a/include/linux/mailbox.h b/include/linux/mailbox.h
+index a9bfded..f3da626 100644
+--- a/include/linux/mailbox.h
++++ b/include/linux/mailbox.h
+@@ -16,5 +16,6 @@
+ int pl320_ipc_register_notifier(struct notifier_block *nb);
+ int pl320_ipc_unregister_notifier(struct notifier_block *nb);
+ 
+-int __must_check bcm2835_mbox_io(unsigned chan, u32 in28, u32 *out28);
+-int __must_check bcm2835_mbox_property(dma_addr_t mem_bus);
++int __must_check bcm2835_mbox_init(struct device **);
++int __must_check bcm2835_mbox_io(struct device *, unsigned chan, u32 in28, u32 *out28);
++int __must_check bcm2835_mbox_property(struct device *, dma_addr_t mem_bus);
+-- 
+1.8.4
+

@@ -56,6 +56,14 @@ See [wiki](https://github.com/notro/rpi-firmware/wiki/bcm285) for more info.
 		self.linux.config(["DYNAMIC_DEBUG"], "y")
 		self.linux.make.oldconfig('')
 
+		self.linux.config(["PROC_DEVICETREE"], "y")
+		self.linux.make.oldconfig()
+
+		self.linux.config(["FB_BCM2835"], "y")
+		self.linux.config(["FB_SIMPLE"], "n")
+		self.linux.make.oldconfig('')
+
+
 #		heading("Enable DHCP")
 #		self.linux.config(['PACKET', 'NETFILTER', 'IP_PNP', 'IP_PNP_DHCP'], 'y')
 #		self.linux.make.oldconfig('')

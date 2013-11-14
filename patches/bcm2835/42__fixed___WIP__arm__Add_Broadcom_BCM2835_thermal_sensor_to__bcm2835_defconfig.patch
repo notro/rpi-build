@@ -1,0 +1,32 @@
+From 2603085137a2af2b414ff91fdacaf601fb1e6c29 Mon Sep 17 00:00:00 2001
+From: Lubomir Rintel <lkundrak@v3.sk>
+Date: Sun, 7 Apr 2013 19:57:23 +0200
+Subject: [PATCH] WIP: arm: Add Broadcom BCM2835 thermal sensor to
+ bcm2835_defconfig
+
+This enables a driver for thermal control driven via mailbox IPC present on
+Broadcom BCM2835 SoC, used in Raspberry Pi and Roku 2 devices.
+
+Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
+Cc: Stephen Warren <swarren@wwwdotorg.org>
+Cc: linux-rpi-kernel@lists.infradead.org
+---
+ arch/arm/configs/bcm2835_defconfig | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm/configs/bcm2835_defconfig b/arch/arm/configs/bcm2835_defconfig
+index c5be2ab..00df4ba 100644
+--- a/arch/arm/configs/bcm2835_defconfig
++++ b/arch/arm/configs/bcm2835_defconfig
+@@ -70,6 +70,8 @@ CONFIG_SPI=y
+ CONFIG_SPI_BCM2835=y
+ CONFIG_GPIO_SYSFS=y
+ # CONFIG_HWMON is not set
++CONFIG_THERMAL=y
++CONFIG_THERMAL_BCM2835=y
+ CONFIG_FB=y
+ CONFIG_FB_SIMPLE=y
+ CONFIG_FRAMEBUFFER_CONSOLE=y
+-- 
+1.8.4
+

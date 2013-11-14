@@ -1,0 +1,41 @@
+From 370c41e6023e6eab6d33a5a5e19f65667f6a9e9b Mon Sep 17 00:00:00 2001
+From: Lubomir Rintel <lkundrak@v3.sk>
+Date: Sun, 7 Apr 2013 20:08:56 +0200
+Subject: [PATCH] WIP: arm: Add Broadcom BCM2835 framebuffer to
+ bcm2835_defconfig
+
+This enables a driver for framebuffer present on Broadcom BCM2835 SoC, used in
+Raspberry Pi and Roku 2 devices.
+
+Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
+Cc: Stephen Warren <swarren@wwwdotorg.org>
+Cc: linux-rpi-kernel@lists.infradead.org
+---
+ arch/arm/configs/bcm2835_defconfig | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/configs/bcm2835_defconfig b/arch/arm/configs/bcm2835_defconfig
+index 4591e0e..12f2d91 100644
+--- a/arch/arm/configs/bcm2835_defconfig
++++ b/arch/arm/configs/bcm2835_defconfig
+@@ -57,7 +57,6 @@ CONFIG_DEVTMPFS_MOUNT=y
+ # CONFIG_INPUT_KEYBOARD is not set
+ # CONFIG_INPUT_MOUSE is not set
+ # CONFIG_SERIO is not set
+-# CONFIG_VT is not set
+ # CONFIG_LEGACY_PTYS is not set
+ # CONFIG_DEVKMEM is not set
+ CONFIG_SERIAL_AMBA_PL011=y
+@@ -76,6 +75,9 @@ CONFIG_THERMAL=y
+ CONFIG_THERMAL_BCM2835=y
+ CONFIG_WATCHDOG=y
+ CONFIG_BCM2835_WDT=y
++CONFIG_FB=y
++CONFIG_FB_BCM2835=y
++CONFIG_FRAMEBUFFER_CONSOLE=y
+ # CONFIG_USB_SUPPORT is not set
+ CONFIG_MMC=y
+ CONFIG_MMC_SDHCI=y
+-- 
+1.8.4
+

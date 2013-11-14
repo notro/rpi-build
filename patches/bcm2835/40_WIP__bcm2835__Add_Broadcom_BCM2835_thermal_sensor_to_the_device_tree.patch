@@ -1,0 +1,38 @@
+From 9f970c3117c7b749db6b5fa83d8ac50d9b0f7fa4 Mon Sep 17 00:00:00 2001
+From: Lubomir Rintel <lkundrak@v3.sk>
+Date: Sun, 7 Apr 2013 18:44:46 +0200
+Subject: [PATCH] WIP: bcm2835: Add Broadcom BCM2835 thermal sensor to the
+ device tree
+
+This adds a device tree binding for the thermal sensor driven via mailbox IPC
+present on Broadcom BCM2835 SoC, used in Raspberry Pi and Roku 2 devices.
+
+Signed-off-by: Dom Cobley <popcornmix@gmail.com>
+Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
+Cc: Stephen Warren <swarren@wwwdotorg.org>
+Cc: linux-rpi-kernel@lists.infradead.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-pm@vger.kernel.org
+---
+ arch/arm/boot/dts/bcm2835.dtsi | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/arch/arm/boot/dts/bcm2835.dtsi b/arch/arm/boot/dts/bcm2835.dtsi
+index 7b58e0e..700c081 100644
+--- a/arch/arm/boot/dts/bcm2835.dtsi
++++ b/arch/arm/boot/dts/bcm2835.dtsi
+@@ -111,6 +111,11 @@
+ 		};
+ 	};
+ 
++	thermal {
++		compatible = "brcm,bcm2835-thermal";
++		brcm,bcm2835-mbox = <&mailbox>;
++	};
++
+ 	clocks {
+ 		compatible = "simple-bus";
+ 		#address-cells = <1>;
+-- 
+1.8.4
+

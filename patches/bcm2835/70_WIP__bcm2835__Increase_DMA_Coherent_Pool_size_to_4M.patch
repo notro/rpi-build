@@ -1,0 +1,45 @@
+From ba73eacd849bb8cf44e047d2b6197cc7351fada7 Mon Sep 17 00:00:00 2001
+From: Lubomir Rintel <lubo.rintel@gooddata.com>
+Date: Sat, 13 Apr 2013 01:53:04 +0200
+Subject: [PATCH] WIP: bcm2835: Increase DMA Coherent Pool size to 4M
+
+VCHIQ needs this.
+---
+ arch/arm/mach-bcm2835/bcm2835.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/arch/arm/mach-bcm2835/bcm2835.c b/arch/arm/mach-bcm2835/bcm2835.c
+index 740fa9e..efec453 100644
+--- a/arch/arm/mach-bcm2835/bcm2835.c
++++ b/arch/arm/mach-bcm2835/bcm2835.c
+@@ -19,6 +19,7 @@
+ #include <linux/of_platform.h>
+ #include <linux/clk/bcm2835.h>
+ #include <linux/clocksource.h>
++#include <linux/dma-mapping.h>
+ 
+ #include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
+@@ -124,6 +125,11 @@ static void __init bcm2835_init(void)
+ 	}
+ }
+ 
++static void __init bcm2835_init_early(void)
++{
++	init_dma_coherent_pool_size(SZ_4M);
++}
++
+ static const char * const bcm2835_compat[] = {
+ 	"brcm,bcm2835",
+ 	NULL
+@@ -134,6 +140,7 @@ static void __init bcm2835_init(void)
+ 	.init_irq = bcm2835_init_irq,
+ 	.handle_irq = bcm2835_handle_irq,
+ 	.init_machine = bcm2835_init,
++	.init_early = bcm2835_init_early,
+ 	.init_time = clocksource_of_init,
+ 	.restart = bcm2835_restart,
+ 	.dt_compat = bcm2835_compat
+-- 
+1.8.4
+
