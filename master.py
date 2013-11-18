@@ -66,8 +66,8 @@ class Tasks(TasksBase):
 		self.linux.config(['FB_TFT'], 'm')
 		self.linux.make.oldconfig('m')
 
-		heading("All console fonts as builtins")
-		self.linux.config(["FONTS"], "y")
+		heading("All console fonts as builtins and rotation")
+		self.linux.config(["FONTS", "FRAMEBUFFER_CONSOLE_ROTATION"], "y")
 		self.linux.make.oldconfig('y')
 
 		heading("Touchscreen, mouse and keyboard subsystem support")
