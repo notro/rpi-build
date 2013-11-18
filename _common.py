@@ -90,6 +90,16 @@ class TasksBase:
 		cp_a(ksrc + "/System.map", dst + "/extra/")
 		cp_a(ksrc + "/.config", dst + "/extra/")
 
+		pre_install = """
+echo "Work around rpi-update issue #106"
+find "${FW_REPOLOCAL}/modules" -mindepth 1 -maxdepth 1 -type d | while read DIR; do
+	BASEDIR=$(basename "${DIR}")
+	rm -rf "${FW_MODPATH}/${BASEDIR}/kernel"
+done
+echo
+"""
+		writef("%s/pre-install" % dst, pre_install)
+
 	def task_commit(self):
 		rpi_firmware_log = self.rpi_firmware.log("-1 --pretty=%s")
 		linux_log = self.linux.repo.log("-1 --pretty=%s")
@@ -336,14 +346,9 @@ Build logs in the [extra/](https://github.com/notro/rpi-firmware/tree/master/ext
 
 ### Install
 
-If [rpi-update](https://github.com/Hexxeh/rpi-update) is older than 12. august 2013, then it has to be manually updated first (or REPO_URI will be overwritten):
+Update [rpi-update](https://github.com/Hexxeh/rpi-update) to make sure we have REPO_URI support:
 ```text
 sudo wget https://raw.github.com/Hexxeh/rpi-update/master/rpi-update -O /usr/bin/rpi-update && sudo chmod +x /usr/bin/rpi-update
-```
-
-Because of an [issue](https://github.com/Hexxeh/rpi-update/issues/106), the following command is needed when going from the vanilla kernel to this kernel (not needed on subsequent notro/rpi-firmware updates):
-```text
-sudo mv /lib/modules/$(uname -r) /lib/modules/$(uname -r).bak
 ```
 
 **Install**
