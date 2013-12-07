@@ -8,7 +8,7 @@ class Tasks(TasksBase):
 
 		self.tools = Git("https://github.com/raspberrypi/tools", self.workdir + "/tools")
 		self.firmware = GithubTarball("https://github.com/raspberrypi/firmware", self.workdir + "/firmware")
-		self.linux = Linux("https://github.com/raspberrypi/linux", self.workdir + "/linux", self.kernel_branch, self.ccprefix)
+		self.linux = Linux("https://github.com/raspberrypi/linux", self.workdir + "/linux-dt", self.kernel_branch, self.ccprefix)
 		self.ads7846 = WgetFile("https://raw.github.com/torvalds/linux/master/drivers/input/touchscreen/ads7846.c", "%s/drivers/input/touchscreen/ads7846.c" % self.linux.workdir, desc="ads7846: Use Device Tree enabled version")
 
 		self.patches = Patches("%s/patches/%s" % (self.scriptdir, self.branch), self.branch)

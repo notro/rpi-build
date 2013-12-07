@@ -9,7 +9,7 @@ class Tasks(TasksBase):
 
 		self.tools = Git("https://github.com/raspberrypi/tools", self.workdir + "/tools")
 		self.firmware = GithubTarball("https://github.com/raspberrypi/firmware", self.workdir + "/firmware")
-		self.linux = Linux("https://github.com/raspberrypi/linux", self.workdir + "/linux", self.kernel_branch, self.ccprefix)
+		self.linux = Linux("https://github.com/raspberrypi/linux", self.workdir + "/linux-%s" % self.kernel_branch, self.kernel_branch, self.ccprefix)
 		self.spi_bcm2708 = WgetFile("https://raw.github.com/notro/spi-bcm2708/master/spi-bcm2708.c", "%s/drivers/spi/spi-bcm2708.c" % self.linux.workdir, desc="spi-bcm2708: DMA capable SPI master driver")
 		self.fbtft = Git("https://github.com/notro/fbtft.git", "%s/drivers/video/fbtft" % self.linux.workdir, desc="FBTFT")
 		self.patches = Patches("%s/patches/%s" % (self.scriptdir, self.branch), self.branch)

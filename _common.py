@@ -55,6 +55,7 @@ class TasksBase:
 		ksrc = self.linux.workdir
 		msrc = self.modules_tmp
 
+		self.rpi_firmware.clone()
 		self.rpi_firmware.checkout(self.branch)
 
 		rm_rf(dst + "/*")
@@ -144,7 +145,7 @@ class Git:
 			return
 		if branch:
 			branch = "-b %s" % branch
-		sh("cd %s && git clone %s %s" % (os.path.split(self.workdir)[0], branch, self.repo))
+		sh("git clone --progress %s %s %s" % (branch, self.repo, self.workdir))
 
 	def log(self, options=''):
 		return sh_output("cd %s && git log %s" % (self.workdir, options)).strip()
