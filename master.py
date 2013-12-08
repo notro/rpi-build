@@ -5,7 +5,7 @@ class Tasks(TasksBase):
 	def setup(self):
 		if not hasattr(self, 'branch'):
 			self.branch = 'master'
-			self.kernel_branch = "rpi-3.6.y"
+			self.kernel_branch = "rpi-3.10.y"
 
 		self.tools = Git("https://github.com/raspberrypi/tools", self.workdir + "/tools")
 		self.firmware = GithubTarball("https://github.com/raspberrypi/firmware", self.workdir + "/firmware")
