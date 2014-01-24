@@ -1,0 +1,39 @@
+diff --git a/arch/arm/mach-bcm2708/bcm2708.c b/arch/arm/mach-bcm2708/bcm2708.c
+index 993379c..840bd60 100644
+--- a/arch/arm/mach-bcm2708/bcm2708.c
++++ b/arch/arm/mach-bcm2708/bcm2708.c
+@@ -85,6 +85,8 @@ static unsigned boardrev, serial;
+ static unsigned uart_clock;
+ static unsigned reboot_part = 0;
+ static unsigned w1_gpio_pin = W1_GPIO;
++static bool nospi;
++static bool nofb;
+ 
+ static void __init bcm2708_init_led(void);
+ 
+@@ -786,7 +788,8 @@ void __init bcm2708_init(void)
+ 	platform_device_register(&w1_device);
+ #endif
+ 	bcm_register_device(&bcm2708_systemtimer_device);
+-	bcm_register_device(&bcm2708_fb_device);
++	if (!nofb)
++		bcm_register_device(&bcm2708_fb_device);
+ 	if (!fiq_fix_enable)
+ 	{
+ 		bcm2708_usb_device.resource = bcm2708_usb_resources_no_fiq_fix;
+@@ -803,7 +806,8 @@ void __init bcm2708_init(void)
+ 	for (i = 0; i < ARRAY_SIZE(bcm2708_alsa_devices); i++)
+ 		bcm_register_device(&bcm2708_alsa_devices[i]);
+ 
+-	bcm_register_device(&bcm2708_spi_device);
++	if (!nospi)
++		bcm_register_device(&bcm2708_spi_device);
+ 	bcm_register_device(&bcm2708_bsc0_device);
+ 	bcm_register_device(&bcm2708_bsc1_device);
+ 
+@@ -1006,3 +1010,5 @@ module_param(serial, uint, 0644);
+ module_param(uart_clock, uint, 0644);
+ module_param(reboot_part, uint, 0644);
+ module_param(w1_gpio_pin, uint, 0644);
++module_param(nospi, bool, 0644);
++module_param(nofb, bool, 0644);
