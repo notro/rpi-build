@@ -55,6 +55,9 @@ class Tasks(TasksBase):
 		self.fbtft.pull()
 
 	def task_config(self):
+		self.task_config_do('m')
+
+	def task_config_do(self, fbtft='m'):
 		heading("make mrproper")
 		self.linux.make.mrproper()
 
@@ -62,9 +65,9 @@ class Tasks(TasksBase):
 		self.linux.make("bcmrpi_defconfig")
 		cp_a("%s/.config" % self.linux.workdir, "%s/.config.standard" % self.linux.workdir)
 
-		heading("All FBTFT modules as loadable modules")
-		self.linux.config(['FB_TFT'], 'm')
-		self.linux.make.oldconfig('m')
+		heading("FBTFT modules")
+		self.linux.config(['FB_TFT'], fbtft)
+		self.linux.make.oldconfig(fbtft)
 
 		heading("All console fonts as builtins and rotation")
 		self.linux.config(["FONTS", "FRAMEBUFFER_CONSOLE_ROTATION"], "y")
