@@ -69,6 +69,9 @@ class Tasks(TasksBase):
 		self.linux.config(['FB_TFT'], fbtft)
 		self.linux.make.oldconfig(fbtft)
 
+		self.linux.config(['CONFIG_BACKLIGHT_GPIO'], 'm')
+		self.linux.make.oldconfig(fbtft)
+
 		heading("All console fonts as builtins and rotation")
 		self.linux.config(["FONTS", "FRAMEBUFFER_CONSOLE_ROTATION"], "y")
 		self.linux.make.oldconfig('y')
@@ -95,7 +98,7 @@ class Tasks(TasksBase):
 	def task_extra(self):
 		make = self.linux.make
 
-		mods = ["gpio_mouse_device", "gpio_keys_device", "ads7846_device"]
+		mods = ["gpio_mouse_device", "gpio_keys_device", "ads7846_device", "gpio_backlight_device"]
 		heading(", ".join(mods))
 		self.fbtft_tools.clone()
 		self.fbtft_tools.pull()
