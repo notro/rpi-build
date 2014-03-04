@@ -85,6 +85,14 @@ class Tasks(TasksBase):
 		self.linux.config(cfgs, "m")
 		self.linux.make.oldconfig()
 
+		heading("STMPE GPIO and Touch")
+		self.linux.config(['MFD_STMPE'], 'y')
+		self.linux.make.oldconfig('')
+		self.linux.config(['STMPE_SPI'], 'y')
+		self.linux.config(['GPIO_STMPE'], 'y')
+		self.linux.config(['TOUCHSCREEN_STMPE'], 'm')
+		self.linux.make.oldconfig()
+
 		heading("CAN bus")
 		self.linux.config(['CONFIG_CAN'], 'y')      # CAN bus subsystem support
 		self.linux.make.oldconfig('')
@@ -98,7 +106,7 @@ class Tasks(TasksBase):
 	def task_extra(self):
 		make = self.linux.make
 
-		mods = ["gpio_mouse_device", "gpio_keys_device", "ads7846_device", "gpio_backlight_device"]
+		mods = ["gpio_mouse_device", "gpio_keys_device", "ads7846_device", "gpio_backlight_device", "stmpe_device"]
 		heading(", ".join(mods))
 		self.fbtft_tools.clone()
 		self.fbtft_tools.pull()
