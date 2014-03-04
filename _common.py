@@ -207,7 +207,7 @@ class GitLocal(Git):
 		if os.path.isdir(self.workdir):
 			print("\ngit.clone(%r, %r, %r)\nAlready cloned" % (self.repo, self.workdir, branch))
 			return
-		raise IOErrror("Directory missing: %s. Must be set up manually" % self.workdir)
+		raise IOError("Directory missing: %s. Must be set up manually" % self.workdir)
 
 	def pull(self, branch=''):
 		pass
