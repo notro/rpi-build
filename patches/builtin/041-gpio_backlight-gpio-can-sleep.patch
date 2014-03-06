@@ -1,0 +1,20 @@
+Subject: gpio_backlight: use gpio_set_value_cansleep() to prevent warning
+
+stmpe-gpio has 'can_sleep' set, because the chip is accessed over SPI/I2C.
+Enable the use of gpio_backlight with such gpio controllers.
+
+---
+
+diff --git a/drivers/video/backlight/gpio_backlight.c b/drivers/video/backlight/gpio_backlight.c
+index 5fa217f..f2228fc 100644
+--- a/drivers/video/backlight/gpio_backlight.c
++++ b/drivers/video/backlight/gpio_backlight.c
+@@ -35,7 +35,7 @@ static int gpio_backlight_update_status(struct backlight_device *bl)
+ 	    bl->props.state & (BL_CORE_SUSPENDED | BL_CORE_FBBLANK))
+ 		brightness = 0;
+ 
+-	gpio_set_value(gbl->gpio, brightness ? gbl->active : !gbl->active);
++	gpio_set_value_cansleep(gbl->gpio, brightness ? gbl->active : !gbl->active);
+ 
+ 	return 0;
+ }

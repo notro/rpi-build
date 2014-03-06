@@ -1,0 +1,38 @@
+From 6c7a53df1d4e48363026be2d1579e0145af89872 Mon Sep 17 00:00:00 2001
+From: Sean Cross <xobs@kosagi.com>
+Date: Thu, 31 Oct 2013 11:54:20 +0800
+Subject: [PATCH 1/7] stmpe-ts: Don't report empty packets
+
+Sometimes, the STMPE chip reports an (x, y, z) value of (0, 0, 0).
+Silently drop these packets, rather than reporitng them.
+---
+ drivers/input/touchscreen/stmpe-ts.c |   11 +++++++----
+ 1 files changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/input/touchscreen/stmpe-ts.c b/drivers/input/touchscreen/stmpe-ts.c
+index 692b685..0784a94 100644
+--- a/drivers/input/touchscreen/stmpe-ts.c
++++ b/drivers/input/touchscreen/stmpe-ts.c
+@@ -148,10 +148,13 @@ static irqreturn_t stmpe_ts_handler(int irq, void *data)
+ 	y = ((data_set[1] & 0xf) << 8) | data_set[2];
+ 	z = data_set[3];
+ 
+-	input_report_abs(ts->idev, ABS_X, x);
+-	input_report_abs(ts->idev, ABS_Y, y);
+-	input_report_abs(ts->idev, ABS_PRESSURE, z);
+-	input_report_key(ts->idev, BTN_TOUCH, 1);
+-	input_sync(ts->idev);
++	/* Sometimes, the chip reports values of all zeroes.  Ignore these. */
++	if (x && y && z) {
++		input_report_abs(ts->idev, ABS_X, x);
++		input_report_abs(ts->idev, ABS_Y, y);
++		input_report_abs(ts->idev, ABS_PRESSURE, z);
++		input_report_key(ts->idev, BTN_TOUCH, 1);
++		input_sync(ts->idev);
++	}
+ 
+        /* flush the FIFO after we have read out our values. */
+ 	__stmpe_reset_fifo(ts->stmpe);
+-- 
+1.7.0.4
+
