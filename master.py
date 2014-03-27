@@ -106,7 +106,8 @@ class Tasks(TasksBase):
 	def task_extra(self):
 		make = self.linux.make
 
-		mods = ["gpio_mouse_device", "gpio_keys_device", "ads7846_device", "gpio_backlight_device", "stmpe_device"]
+		mods = ["gpio_mouse_device", "gpio_keys_device", "ads7846_device",
+			"gpio_backlight_device", "stmpe_device", "rpi_power_switch"]
 		heading(", ".join(mods))
 		self.fbtft_tools.clone()
 		self.fbtft_tools.pull()
