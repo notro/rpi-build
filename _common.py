@@ -516,7 +516,7 @@ def readf(f):
 			str = f.read()
 	return str
 
-def writef(f, str):
+def writef(f, str, mode='w'):
 	print("=> writef(%s)" % f)
-	with open(f, 'w') as f:
+	with open(f, mode) as f:
 		f.write(str)
