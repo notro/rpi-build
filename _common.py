@@ -361,6 +361,29 @@ class Patches:
 		return str
 
 
+class Devicetrees:
+	def __init__(self, path, compiler):
+		self.path = path
+		self.compiler = compiler
+
+	def install(self, path):
+		for f in os.listdir(self.path):
+			src = "%s/%s" % (self.path, f)
+			if os.path.splitext(f)[1] != '.dtsi':
+				continue
+			cp_a(src, path)
+
+		for f in os.listdir(self.path):
+			src = "%s/%s" % (self.path, f)
+			if os.path.splitext(f)[1] != '.dts':
+				continue
+			base = os.path.splitext(f)[0]
+			dts = path + "/" + base + ".dts"
+			dtb = path + "/" + base + ".dtb"
+			cp_a(src, path)
+			sh(self.compiler + " -O dtb -o " + dtb + " -I dts " + dts)
+
+
 class Readme:
 	def __init__(self, filename, release_branch='master', desc=''):
 		self.filename = filename

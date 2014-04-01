@@ -1,0 +1,24 @@
+diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
+index 4c82aab..3afbc73 100644
+--- a/drivers/video/Kconfig
++++ b/drivers/video/Kconfig
+@@ -2484,6 +2484,7 @@ source "drivers/video/omap/Kconfig"
+ source "drivers/video/omap2/Kconfig"
+ source "drivers/video/exynos/Kconfig"
+ source "drivers/video/mmp/Kconfig"
++source "drivers/video/fbtft/Kconfig"
+ source "drivers/video/backlight/Kconfig"
+ 
+ if VT
+diff --git a/drivers/video/Makefile b/drivers/video/Makefile
+index 032f386..55e69e5 100644
+--- a/drivers/video/Makefile
++++ b/drivers/video/Makefile
+@@ -143,6 +143,7 @@ obj-$(CONFIG_FB_SH_MOBILE_MERAM)  += sh_mobile_meram.o
+ obj-$(CONFIG_FB_SH_MOBILE_LCDC)	  += sh_mobile_lcdcfb.o
+ obj-$(CONFIG_FB_OMAP)             += omap/
+ obj-y                             += omap2/
++obj-$(CONFIG_FB_TFT)              += fbtft/
+ obj-$(CONFIG_XEN_FBDEV_FRONTEND)  += xen-fbfront.o
+ obj-$(CONFIG_FB_CARMINE)          += carminefb.o
+ obj-$(CONFIG_FB_MB862XX)	  += mb862xx/

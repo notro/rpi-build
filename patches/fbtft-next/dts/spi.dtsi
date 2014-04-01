@@ -1,0 +1,20 @@
+/*
+ * Enable the SPI controller
+ */
+
+/include/ "bcm2708.dtsi"
+
+&spi {
+	status = "okay";
+};
+
+&gpio {
+	pinctrl-names = "default";
+	pinctrl-0 = <&spi0_pins>;
+
+	spi0_pins: spi0 {
+		brcm,pins = <7 8 9 10 11>;
+		brcm,function = <4>; /* alt0 */
+	};
+
+};

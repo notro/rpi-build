@@ -1,0 +1,31 @@
+diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+index f6745bb..bebc350 100644
+--- a/drivers/misc/Kconfig
++++ b/drivers/misc/Kconfig
+@@ -4,6 +4,14 @@
+ 
+ menu "Misc devices"
+ 
++config FDT_LOADER
++	bool "Device Tree Loader"
++	select OF
++	select OF_EARLY_FLATTREE
++	help
++	  This module loads a Device Tree Blob using request_firmware().
++	  For platforms that doesn't have Device Tree support.
++
+ config SENSORS_LIS3LV02D
+ 	tristate
+ 	depends on INPUT
+diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
+index 40e5af1..82df1d2 100644
+--- a/drivers/misc/Makefile
++++ b/drivers/misc/Makefile
+@@ -2,6 +2,7 @@
+ # Makefile for misc devices that really don't fit anywhere else.
+ #
+ 
++obj-$(CONFIG_FDT_LOADER)	+= fdt_loader.o
+ obj-$(CONFIG_IBM_ASM)		+= ibmasm/
+ obj-$(CONFIG_AD525X_DPOT)	+= ad525x_dpot.o
+ obj-$(CONFIG_AD525X_DPOT_I2C)	+= ad525x_dpot-i2c.o

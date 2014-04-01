@@ -1,0 +1,27 @@
+diff --git a/arch/arm/mach-bcm2708/Kconfig b/arch/arm/mach-bcm2708/Kconfig
+index e151ed4..e4fedc2 100644
+--- a/arch/arm/mach-bcm2708/Kconfig
++++ b/arch/arm/mach-bcm2708/Kconfig
+@@ -38,4 +38,13 @@ config BCM2708_SPIDEV
+ 	default y
+ 	help
+ 	  Binds spidev driver to the SPI0 master
++
++config PINCTRL_BCM2708
++	bool "BCM2708 pinctrl driver"
++	depends on OF && BCM2708_GPIO
++	select PINCTRL
++	select PINMUX
++	select PINCONF
++	help
++	  Add pinmux and pinconf functionality to bcm2708_gpio
+ endmenu
+diff --git a/arch/arm/mach-bcm2708/Makefile b/arch/arm/mach-bcm2708/Makefile
+index a722f3f..5bd49ae 100644
+--- a/arch/arm/mach-bcm2708/Makefile
++++ b/arch/arm/mach-bcm2708/Makefile
+@@ -5,3 +5,4 @@
+ obj-$(CONFIG_MACH_BCM2708) 	+= clock.o bcm2708.o armctrl.o vcio.o power.o dma.o
+ obj-$(CONFIG_BCM2708_GPIO)	+= bcm2708_gpio.o
+ obj-$(CONFIG_BCM2708_VCMEM)	+= vc_mem.o
++obj-$(CONFIG_PINCTRL_BCM2708)	+= pinctrl-bcm2708.o
