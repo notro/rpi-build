@@ -15,7 +15,8 @@ rescue LoadError
 end
 
 require 'time'
-require 'http'
+require 'open-uri'
+require 'json'
 require 'rake'
 require 'tempfile'
 
@@ -184,16 +185,15 @@ module Rake
 
     def http_get(url)
       begin
-        r = Http.get url
+        r = open url
       rescue
         puts "could not get ${url}"
         raise
       end
-      raise "could not get ${url}" if r.nil?
-      if r['X-RateLimit-Remaining'] == "0"
-        raise "Github API rate limit exceeded for #{url} (#{r['X-RateLimit-Limit']} per hour)"
+      if r.meta['X-RateLimit-Remaining'] == "0"
+        raise "Github API rate limit exceeded for #{url} (#{r.meta['X-RateLimit-Limit']} per hour)"
       end
-      r.to_s
+      r.read
     end
 
     def github_get_head(repo, branch='master')
