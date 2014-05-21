@@ -1,8 +1,20 @@
 task :admin do
-  puts "yes admin"
 end
 
 task :addlib, [:gitrepo] do |t, args|
   raise "missing gitrepo argument to 'addlib'" unless args.gitrepo
-  puts "Add library: #{args.gitrepo}"
+  u = URI args.gitrepo
+  if URI(args.gitrepo).absolute?
+    url = args.gitrepo
+  else
+    url = "https://github.com/#{args.gitrepo}"
+  end
+
+  path = File.join ENV["RPI_BUILD_DIR"], File.basename(url, File.extname(url))
+  if File.exists? path
+    puts "Library already exists"
+  else
+    puts "Add library: #{args.gitrepo}"
+    verbose(true) { sh "git clone #{url} #{path}" }
+  end
 end
