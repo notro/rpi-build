@@ -92,6 +92,15 @@ end
 
 module Rake
 
+  class Application
+    # >=10.2.0 has exit_because_of_exception()
+    alias_method :org_display_error_message, :display_error_message
+    def display_error_message(ex)
+      $exception_raised = ex
+      org_display_error_message ex
+    end
+  end
+
   module DSL
 
     def env_store(name, &block)
@@ -467,5 +476,7 @@ ensure
     $logfile.close
     verbose(!!Rake.application.options.trace) { sh "cat #{$logfile.path} >> #{workdir("build.log")}" }
     $logfile.unlink
+    # re-display, since it was caught by the logfile
+    Rake.application.display_error_message($exception_raised) if $exception_raised
   end
 end
