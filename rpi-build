@@ -12,6 +12,7 @@ fn = File.join ENV["RPI_BUILD_DIR"], "bin/build"
 unless File.exists? fn
   `mkdir -p #{ENV["RPI_BUILD_DIR"]}`
   `cd #{ENV["RPI_BUILD_DIR"]} && git clone https://github.com/notro/rpi-build bin && cd bin && git checkout next`
+  `cd #{ENV["RPI_BUILD_DIR"]} && git clone https://github.com/notro/rpi-build-stdlib stdlib`
 end
 
 exec fn, *ARGV
