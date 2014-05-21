@@ -65,6 +65,7 @@ task :log do
   $stderr = $stdout
 
   $logfile = Tempfile.open(['rpi-build', '.log'])
+  puts "Temporary logfile: #{$logfile.path}"
   $logfile.puts "Start: #{Time.now}\n\n"
   $logfile.puts "Commandline arguments: #{ARGV.join ' '}\n\n"
   STDOUT.reopen $logfile
