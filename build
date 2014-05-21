@@ -406,12 +406,8 @@ def workdir(file=nil)
   file ? File.join(ENV['WORKDIR'], file) : ENV['WORKDIR']
 end
 
-# TODO: File.join ENV["RPI_BUILD_DIR"], 'downloads'
 def download_dir(file=nil)
-  unless ENV['DOWNLOAD_DIR']
-    raise "$HOME not set" unless ENV['HOME']
-    ENV['DOWNLOAD_DIR'] = File.join ENV['HOME'], "rpi-build-downloads"
-  end
+  ENV['DOWNLOAD_DIR'] ||= File.join ENV["RPI_BUILD_DIR"], 'downloads'
   sh "mkdir -p #{ENV['DOWNLOAD_DIR']}" unless File.exists? ENV['DOWNLOAD_DIR']
   file ? File.join(ENV['DOWNLOAD_DIR'], file) : ENV['DOWNLOAD_DIR']
 end
