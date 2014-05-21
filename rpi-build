@@ -1,0 +1,17 @@
+#!/usr/bin/env ruby
+
+#
+# Copyright (C) 2014 Noralf Tronnes
+#
+# MIT License
+#
+
+ENV["RPI_BUILD_DIR"] ||= File.expand_path '~/rpi-build'
+
+fn = File.join ENV["RPI_BUILD_DIR"], "bin/build"
+unless File.exists? fn
+  `mkdir -p #{ENV["RPI_BUILD_DIR"]}`
+  `cd #{ENV["RPI_BUILD_DIR"]} && git clone https://github.com/notro/rpi-build bin && cd bin && git checkout next`
+end
+
+exec fn, *ARGV

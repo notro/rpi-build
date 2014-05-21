@@ -1,0 +1,475 @@
+#!/usr/bin/env ruby
+
+#
+# Copyright (C) 2014 Noralf Tronnes
+#
+# MIT License
+#
+
+require 'pp'
+
+begin
+  require 'rubygems'
+  gem 'rake'
+rescue LoadError
+end
+
+require 'time'
+require 'http'
+require 'rake'
+require 'tempfile'
+
+
+class LinuxVersion
+  include Comparable
+
+  attr_reader :version
+  attr_reader :patchlevel
+  attr_reader :sublevel
+  attr_reader :extraversion
+
+  def initialize(str)
+    m = str.match /^(\d+)\.(\d+)\.(\d+)(.*)$/
+    if m
+      @sublevel = m[3].to_i
+      @extraversion = m[4]
+    else
+      m = str.match /^(\d+)\.(\d+)$/
+      raise "can't parse Linux kernel version number '#{str}'" unless m
+      @sublevel = 0
+      @extraversion = ""
+    end
+    @version = m[1].to_i
+    @patchlevel = m[2].to_i
+    @version_number = @version * 10**6 + @patchlevel * 10**3 + @sublevel
+  end
+
+  def <=>(other)
+    self.to_i <=> other.to_i
+  end
+
+  def to_i
+    @version_number
+  end
+
+  def to_s
+    if @sublevel == 0
+      "#{@version}.#{@patchlevel}"
+    else
+      "#{@version}.#{@patchlevel}.#{@sublevel}#{@extraversion}"
+    end
+  end
+
+  class << self
+    def parse_makefile(fn)
+      makefile = File.read fn
+      version = makefile.match(/VERSION = (\d+)$/)
+      patchlevel = makefile.match(/PATCHLEVEL = (\d+)$/)
+      sublevel = makefile.match(/SUBLEVEL = (\d+)$/)
+      extraversion = makefile.match(/EXTRAVERSION =\s*(\w+)$/)
+      unless version and patchlevel and sublevel
+        raise "Can't extract the kernel version"
+      end
+      new "#{version[1]}.#{patchlevel[1]}.#{sublevel[1]}#{extraversion[1] if extraversion }"
+    end
+  end
+
+end
+
+def uname_m
+  @uname_m ||= `uname -m`.strip
+end
+
+def make(target='', pre='')
+  if uname_m == 'armv6l'
+    "cd #{workdir 'linux'} && #{pre}make #{target}"
+  else
+    "cd #{workdir 'linux'} && #{pre}ARCH=arm CROSS_COMPILE=#{workdir 'tools/arm-bcm2708/arm-bcm2708-linux-gnueabi/bin/arm-bcm2708-linux-gnueabi-'} make #{target}"
+  end
+end
+
+
+module Rake
+
+  module DSL
+
+    def env_store(name, &block)
+      unless ENV[name]
+        fn = workdir "#{name}.variable"
+        if File.exists? fn
+          ENV[name] = File.read fn
+          op = '='
+        else
+          ENV[name] = block.call(self)
+          File.open(fn, 'w') { |file| file.write(ENV[name]) }
+          op = '<='
+        end
+      else
+        op = '=='
+      end
+      puts "#{name} #{op} '#{ENV[name]}'"
+    end
+
+    def find_patch_file(fn, ver, dir)
+      [workdir(fn), "#{dir}/patches/#{fn}"].each { |f| return f if File.file? f }
+
+      fl = FileList["#{workdir fn}/*"] + FileList["#{dir}/patches/#{fn}/*"]
+      raise "can't find patch '#{fn}'" if fl.empty?
+      patches = []
+      fl.each { |f| patches << { :file => f, :ver => LinuxVersion.new(File.basename f) } }
+      # favour workdir entries by removing duplicates
+      patches.uniq! { |p| p[:ver].to_i }
+      patches = patches.sort_by { |p| p[:ver].to_i }
+      bestmatch = nil
+      v = LinuxVersion.new(ver)
+      patches.each do |p|
+        break unless v >= p[:ver]
+        bestmatch = p# if v >= p[:ver]
+      end
+      raise "can't find patch '#{fn}' that match '#{ver}'" unless bestmatch
+      bestmatch[:file]
+    end
+
+    def patch(file)
+      dir = File.dirname caller[0][/[^:]*/]
+      task :patch do
+        print "Trying '#{file}'..."
+        f = find_patch_file file, ENV['LINUX_KERNEL_VERSION'], dir
+        if File.zero? f
+          puts " skipped"
+          next
+        else
+          puts
+        end
+        sh "cd #{workdir 'linux'} && git apply -v #{File.expand_path f}"
+      end
+    end
+
+    def config(option, command, answer=nil)
+      option = [option] unless option.is_a? Array
+      cmd = []
+      option.each do |k|
+        value = ''
+        case command
+        when :enable, 'enable','e'
+          c = '--enable'
+        when :disable, 'disable', 'd'
+          c = '--disable'
+        when :module, 'module', 'm'
+          c = '--module'
+        when :str
+          c = '--set-str'
+          val = "\"#{answer}\""
+          answer = nil
+        when :val
+          c = '--set-val'
+          val = answer
+          answer = nil
+        when :undefine
+          c = '--undefine'
+        end
+        cmd << "cd #{workdir 'linux'} && scripts/config #{c} #{k} #{val}"
+      end
+
+      if answer
+        cmd << make('oldconfig', "yes #{answer} | ")
+      else
+        cmd << make('oldconfig', "yes \"\" | ")
+      end
+
+      task :config do
+        cmd.each { |c| sh c }
+      end
+    end
+
+    def http_get(url)
+      begin
+        r = Http.get url
+      rescue
+        puts "could not get ${url}"
+        raise
+      end
+      raise "could not get ${url}" if r.nil?
+      if r['X-RateLimit-Remaining'] == "0"
+        raise "Github API rate limit exceeded for #{url} (#{r['X-RateLimit-Limit']} per hour)"
+      end
+      r.to_s
+    end
+
+    def github_get_head(repo, branch='master')
+      url = "https://api.github.com/repos/#{repo}/git/refs/heads/master"
+      j = JSON.parse http_get url
+      begin
+        sha = j['object']['sha']
+      rescue
+        puts "\n\n\n\n===>"
+        puts j.inspect
+        puts "<===\n\n    ERROR: bad response from #{url}\n\n"
+        raise
+      end
+      sha
+    end
+
+    def github_tarball(repo, symlink, sha=nil)
+      sha = 'master' if sha == nil
+      saveas = "#{repo.gsub '/', '-'}-#{sha}.tar.gz"
+
+      dl = download "https://github.com/#{repo}/archive/#{sha}.tar.gz", saveas
+
+      un = unpack saveas, symlink
+      un.enhance [dl.name]
+      return dl, un
+    end
+
+    def download(src, saveas=nil)
+      saveas ||= File.basename(src)
+      dst = download_dir saveas
+
+      t = file dst do
+        sh "wget --progress=dot:mega -O #{dst} #{src}"
+      end
+      task :fetch => dst
+      t
+    end
+
+    def unpack(fn, symlink=nil)
+      src = download_dir fn
+      # determine unpacking method
+      # http://docs.openembedded.org/usermanual/html/src_uri_variable.html
+      list = nil
+      if src.end_with? '.tar' or %w{.tgz .tar.gz tar.Z}.any? { |ext| src.end_with? ext }
+        cmd = %w[tar]
+        if src.end_with? '.tar'
+          cmd << 'x'
+        else
+          cmd << 'xz'
+        end
+        cmd << '--checkpoint=100 --checkpoint-action=dot'
+        cmd << "-C #{workdir}"
+        cmd << "-f #{src}"
+        cmd = cmd.join " "
+        if src.end_with? '.tar'
+          list = "tar tf #{src} | sed -e 's@/.*@@' | uniq"
+        else
+          list = "tar tzf #{src} | sed -e 's@/.*@@' | uniq"
+        end
+      else
+        raise "Don't know how to unpack #{src}"
+      end
+
+      dst_name = fn.split('.')[0]
+      symlink ||= dst_name
+      t = file workdir(dst_name) do
+        sh cmd
+        puts
+        # if we can list the contents of the archive, make a symlink to the first entry
+        if list
+          toplevel = `#{list}`.strip
+          raise "Failed to rename unpacked archive (status = #{$?.to_i})" if $?.to_i != 0
+          if toplevel != symlink
+            cd workdir do
+              ln_s toplevel, symlink, :verbose => true
+            end
+          end
+        end
+        # a marker to show that we have unpacked
+        touch workdir(dst_name)
+      end
+      task :unpack => workdir(dst_name)
+      t
+    end
+
+    def git(src, saveas)
+      d = file download_dir(saveas) do
+        cd download_dir do
+          sh "git clone #{src} #{saveas}"
+        end
+      end
+      task :fetch => download_dir(saveas)
+
+      l = file workdir(saveas) do
+        ln_s download_dir(saveas), workdir(saveas)
+      end
+      task :unpack => workdir(saveas)
+
+      return d, l
+    end
+
+    def package(*args, &block)
+      Rake::Package.define_task(*args, &block)
+    end
+
+    def target(*args, &block)
+      Rake::TargetTask.define_task(*args, &block)
+    end
+
+    def release(*args, &block)
+      Rake::ReleaseTask.define_task(*args, &block)
+    end
+
+  end
+
+  class Package < Task
+    def invoke_with_call_chain(task_args, invocation_chain)
+      puts "Package: #{self.name}"
+      super
+    end
+  end
+
+  class TargetTask < Task
+    # the first dependency is also a special target dependency
+    def enhance(deps=nil, &block)
+      if deps
+          @target_dep = deps[0] if @prerequisites.empty?
+          @prerequisites |= deps
+      end
+      @actions << block if block_given?
+      self
+    end
+
+    # always run when using direct invocation 
+    def invoke(*args)
+      Rake::FileUtilsExt.verbose(!!Rake.application.options.trace) { Rake::FileUtilsExt.rm_f workdir name.to_s }
+      super
+    end
+
+    # stop the invocation chain if timestamp is later than every
+    # target in the target dependency chain
+    def invoke_with_call_chain(task_args, invocation_chain)
+      super if ! File.exist?(workdir name) or target_dep_timestamp > timestamp
+    end
+
+    def target_dep_timestamp
+      @target_dep ||=nil
+      if @target_dep
+        td = application[@target_dep, @scope]
+        if td.respond_to? 'target_dep_timestamp'
+          stamp = td.target_dep_timestamp
+          return stamp > timestamp ? stamp : timestamp
+        end
+      end
+      timestamp
+    end
+
+    def timestamp
+      if File.exist?(workdir name)
+        File.mtime(workdir name.to_s)
+      else
+        Rake::EARLY
+      end
+    end
+
+    def execute(args=nil)
+      super
+      Rake::FileUtilsExt.verbose(!!Rake.application.options.trace) { Rake::FileUtilsExt.touch workdir name.to_s }
+      puts "Target '#{self.name}' done\n\n"
+    end
+  end
+
+  class ReleaseTask < Task
+    attr_reader :invoke_action
+
+    # the first block runs before the dependencies
+    # other actions as usual
+    def enhance(deps=nil, &block)
+      @prerequisites |= deps if deps
+      if block_given?
+        unless @invoke_action
+          @invoke_action = block
+        else
+          @actions << block
+        end
+      end
+      self
+    end
+
+    def invoke(*args)
+      if @invoke_action
+        # use application.trace in > 0.9.2
+        $stderr.puts "** Execute #{name} (invoke_action)" if application.options.trace
+        @invoke_action.call(self)
+      end
+      super
+    end
+
+    def invoke_with_call_chain(task_args, invocation_chain)
+      puts "Release: #{self.name}"
+      super
+    end
+  end
+end
+
+
+def workdir(file=nil)
+  ENV['WORKDIR'] ||= File.join(Rake.application.original_dir, 'workdir')
+  sh "mkdir -p #{ENV['WORKDIR']}" unless File.exists? ENV['WORKDIR']
+  file ? File.join(ENV['WORKDIR'], file) : ENV['WORKDIR']
+end
+
+# TODO: File.join ENV["RPI_BUILD_DIR"], 'downloads'
+def download_dir(file=nil)
+  unless ENV['DOWNLOAD_DIR']
+    raise "$HOME not set" unless ENV['HOME']
+    ENV['DOWNLOAD_DIR'] = File.join ENV['HOME'], "rpi-build-downloads"
+  end
+  sh "mkdir -p #{ENV['DOWNLOAD_DIR']}" unless File.exists? ENV['DOWNLOAD_DIR']
+  file ? File.join(ENV['DOWNLOAD_DIR'], file) : ENV['DOWNLOAD_DIR']
+end
+
+
+
+
+##########################################################################################
+
+# cd workdir/linux
+# scripts/diffconfig .config.defconfig .config
+
+# add first in the search path
+$LOAD_PATH.unshift ENV["RPI_BUILD_DIR"]
+
+begin
+  STDOUT.sync = true
+  STDERR.sync = true
+  stdout_org = STDOUT.dup
+  stderr_org = STDERR.dup
+
+  Rake.application.standard_exception_handling do
+    Rake.application.init
+    if Rake.application.top_level_tasks and Rake.application.top_level_tasks[0] == "admin"
+      load File.join File.dirname(__FILE__), 'admin.rake'
+    else
+      load File.join File.dirname(__FILE__), 'tasks.rake'
+      Rake.application[:usage].invoke if Rake.application.top_level_tasks.empty?
+      # run 'tasks.rake' tasks first if asked for
+      Rake.application.top_level_tasks.reject! { |task_string|
+        name, args = Rake.application.parse_task_string(task_string)
+        t = Rake.application.lookup name
+        if t
+          t.invoke args
+          true
+        else
+          false
+        end
+      }
+      exit if Rake.application.top_level_tasks.empty?
+      puts "Workdir: #{workdir}"
+      load File.join File.dirname(__FILE__), 'targets.rake'
+      Rake.application.load_rakefile
+    end
+  #  Rake::Task[:environment].invoke
+  #  t = Rake::Task[:fbtft_master]
+  #  t.execute
+  #  t.invoke
+    Rake.application.top_level
+  end
+
+ensure
+  STDOUT.reopen stdout_org
+  STDERR.reopen stderr_org
+  if $logfile
+    $logfile.puts "\nEnd: #{Time.now}\n\n"
+    $logfile.close
+    verbose(!!Rake.application.options.trace) { sh "cat #{$logfile.path} >> #{workdir("build.log")}" }
+    $logfile.unlink
+  end
+end
