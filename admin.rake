@@ -18,3 +18,9 @@ task :addlib, [:gitrepo] do |t, args|
     verbose(true) { sh "git clone #{url} #{path}" }
   end
 end
+
+task :update do
+  Dir.glob("#{ENV['RPI_BUILD_DIR']}/*/.git") do |file|
+    sh "cd #{File.dirname file} && git pull"
+  end
+end
