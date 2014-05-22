@@ -235,7 +235,7 @@ module Rake
       dst = download_dir saveas
 
       t = file dst do
-        sh "wget --progress=dot:mega -O #{dst} #{src}"
+        sh "wget --progress=dot:mega -O '#{dst}' '#{src}'"
       end
       task :fetch => dst
       t
@@ -245,23 +245,12 @@ module Rake
       src = download_dir fn
       # determine unpacking method
       # http://docs.openembedded.org/usermanual/html/src_uri_variable.html
-      list = nil
-      if src.end_with? '.tar' or %w{.tgz .tar.gz tar.Z}.any? { |ext| src.end_with? ext }
-        cmd = %w[tar]
-        if src.end_with? '.tar'
-          cmd << 'x'
-        else
-          cmd << 'xz'
-        end
-        cmd << '--checkpoint=100 --checkpoint-action=dot'
-        cmd << "-C #{workdir}"
-        cmd << "-f #{src}"
-        cmd = cmd.join " "
-        if src.end_with? '.tar'
-          list = "tar tf #{src} | sed -e 's@/.*@@' | uniq"
-        else
-          list = "tar tzf #{src} | sed -e 's@/.*@@' | uniq"
-        end
+      if %w{.tar .tgz .tar.gz .tar.Z .tar.bz2 .tar.xz}.any? { |ext| src.end_with? ext }
+        cmd = "tar -x --checkpoint=100 --checkpoint-action=dot -C #{workdir} -f #{src}"
+        list = "tar tf #{src} | sed -e 's@/.*@@' | uniq"
+      elsif %w{.zip}.any? { |ext| src.end_with? ext }
+        cmd = "unzip -q #{src} -d #{workdir}"
+        list = "unzip -Z -1 #{src} | sed -e 's@/.*@@' | uniq"
       else
         raise "Don't know how to unpack #{src}"
       end
