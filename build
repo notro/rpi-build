@@ -282,7 +282,8 @@ module Rake
         raise "Don't know how to unpack #{src}"
       end
 
-      dst_name = fn.split('.')[0]
+      dst_name = File.basename(fn, File.extname(fn))
+      dst_name = File.basename(dst_name, File.extname(dst_name)) if File.extname(dst_name) == '.tar'
       symlink ||= dst_name
       t = file workdir(dst_name) do
         sh cmd
