@@ -19,6 +19,7 @@ require 'open-uri'
 require 'json'
 require 'rake'
 require 'tempfile'
+require 'rss'
 
 
 class LinuxVersion
@@ -224,6 +225,32 @@ module Rake
       saveas = "#{repo.gsub '/', '-'}-#{sha}.tar.gz"
 
       dl = download "https://github.com/#{repo}/archive/#{sha}.tar.gz", saveas
+
+      un = unpack saveas, symlink
+      un.enhance [dl.name]
+      return dl, un
+    end
+
+    def gitweb_get_head(repo, branch='master')
+      url = "#{repo};a=rss;h=refs/heads/#{branch}"
+      feed = open(url) { |rss| RSS::Parser.parse(rss) }
+      begin
+        m = feed.items.first.link.match(/h=(.+)$/)
+        m[1]
+      rescue
+        puts "\n\n\n\n===>"
+        puts feed.inspect
+        puts "<===\n\n    ERROR: bad response from #{url}\n\n"
+        raise
+      end
+    end
+
+    def gitweb_tarball(repo, symlink, ref=nil)
+      ref ||= 'refs/heads/master'
+      url = "#{repo};a=snapshot;h=#{ref};sf=tbz2"
+      saveas = "#{repo}-#{ref}.tar.bz2".gsub(/.+:\/\//, '').gsub(/[^A-Za-z\d\._\-]/, '-')
+
+      dl = download url, saveas
 
       un = unpack saveas, symlink
       un.enhance [dl.name]
