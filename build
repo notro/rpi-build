@@ -220,8 +220,13 @@ module Rake
       sha
     end
 
-    def github_tarball(repo, symlink, sha=nil)
-      sha = 'master' if sha == nil
+    def github_tarball(repo, symlink, env_name=nil)
+      env_name ||= repo.gsub(/[\/\-]/, '_').upcase
+      ENV["#{env_name}_BRANCH"] ||= 'master'
+      env_store "#{env_name}_SHA" do
+        github_get_head(repo, ENV["#{env_name}_BRANCH"])
+      end
+      sha = ENV["#{env_name}_SHA"]
       saveas = "#{repo.gsub '/', '-'}-#{sha}.tar.gz"
 
       dl = download "https://github.com/#{repo}/archive/#{sha}.tar.gz", saveas
