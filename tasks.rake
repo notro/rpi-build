@@ -11,6 +11,8 @@ Targes:
 * unpack          - Unpack archives into workdir
 * patch           - Patch Linux kernel source
 * config          - Configure Linux kernel
+* menuconfig      - make menuconfig
+* diffconfig      - Show kernel config diff from default config
 * build           - Build Linux kernel
 * modules_install - 
 * external        - Build and install out-of-tree modules

@@ -28,8 +28,22 @@ end
 desc "Configure kernel"
 #target :config => b.name do
 target :config => :patch do
+  raise "missing environment variable LINUX_DEFCONFIG" unless ENV['LINUX_DEFCONFIG']
   sh "#{make ENV['LINUX_DEFCONFIG']}"
   cp workdir('linux/.config'), workdir('linux/.config.defconfig')
+end
+
+
+target :menuconfig => :config do
+  if `ldconfig -p | grep ncurses`.strip.empty?
+    raise 'missing ncurses library. apt-get install libncurses5-dev'
+  end
+  sh make 'menuconfig'
+end
+
+
+target :diffconfig => :config do
+  sh "cd #{workdir 'linux'} && scripts/diffconfig .config.defconfig .config"
 end
 
 
