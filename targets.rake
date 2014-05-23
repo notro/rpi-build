@@ -49,15 +49,20 @@ end
 
 desc "Build kernel => #{Rake::Task[:config].comment}"
 target :build => :config do
+  rm FileList["#{workdir}/{pre_install,post_install}"]
   cpus = `nproc`.strip.to_i
   sh make "-j#{cpus*2}"
 end
 
 
 target :modules_install => :build do
-  d = workdir 'modules'
-  mkdir d unless File.directory? d
-  sh make "INSTALL_MOD_PATH=#{d} modules_install"
+  unless `cd #{workdir 'linux'} && scripts/config --state MODULES`.strip == 'n'
+    d = workdir 'modules'
+    mkdir d unless File.directory? d
+    sh make "INSTALL_MOD_PATH=#{d} modules_install"
+  else
+    puts 'Loadable kernel module support is disabled'
+  end
 end
 
 
@@ -66,10 +71,12 @@ target :external => :modules_install
 
 
 target :install => :external do
-  # the first action is to make a clean directory
   dst = workdir 'out'
   rm_rf dst
   mkdir_p dst
+
+  fl = FileList["#{workdir}/{pre_install,post_install}"]
+  cp fl, dst unless fl.empty?
 end
 
 

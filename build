@@ -94,6 +94,13 @@ def make(target='', pre='')
   "cd #{workdir 'linux'} && #{pre}ARCH=arm #{cross_compile} make #{target}"
 end
 
+def pre_install(str)
+  File.open(workdir('pre_install'), 'a') { |file| file.write str }
+end
+
+def post_install(str)
+  File.open(workdir('post_install'), 'a') { |file| file.write str }
+end
 
 module Rake
 
