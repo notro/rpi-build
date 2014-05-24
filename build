@@ -19,7 +19,6 @@ require 'open-uri'
 require 'json'
 require 'rake'
 require 'tempfile'
-require 'rss'
 
 
 class LinuxVersion
@@ -356,6 +355,8 @@ module Rake
     end
 
     def gitweb_get_head(repo, branch='master')
+      # this is very slow on the Pi (~9s), only require when needed
+      require 'rss'
       url = "#{repo};a=rss;h=refs/heads/#{branch}"
       feed = open(url) { |rss| RSS::Parser.parse(rss) }
       begin
