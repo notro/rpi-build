@@ -10,9 +10,45 @@ ENV["RPI_BUILD_DIR"] ||= File.expand_path '~/rpi-build'
 
 fn = File.join ENV["RPI_BUILD_DIR"], "bin/build"
 unless File.exists? fn
+  # check dependencies
+  missing = []
+  begin
+    `git --version`
+  rescue
+    missing << '- git      (apt-get install git)'
+  end
+  
+  begin
+    begin
+      require 'rubygems'
+      gem 'rake'
+    rescue LoadError
+    end
+    require 'rake'
+  rescue LoadError
+    missing << '- rake     (apt-get install rake)'
+  end
+  
+  begin
+    `bc --version`
+  rescue
+    missing << '- bc       (apt-get install bc)'
+  end
+  
+  unless missing.empty?
+    puts "Missing dependencies:"
+    puts missing.join "\n"
+    exit 1
+  end
+
+  # install
+  puts "Installing rpi-build to #{ENV["RPI_BUILD_DIR"]}:"
   `mkdir -p #{ENV["RPI_BUILD_DIR"]}`
+  puts "\nrpi-build"
   `cd #{ENV["RPI_BUILD_DIR"]} && git clone https://github.com/notro/rpi-build bin && cd bin && git checkout next`
+  puts "\nstdlib"
   `cd #{ENV["RPI_BUILD_DIR"]} && git clone https://github.com/notro/rpi-build-stdlib stdlib`
+  puts "\nDone.\n\n"
 end
 
 exec fn, *ARGV
