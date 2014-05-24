@@ -6,7 +6,7 @@ task :usage do
   puts """Usage:
 rpi-build [option tasks] <release> <target>
 
-Targes:
+Targets:
 * fetch           - Download files
 * unpack          - Unpack archives into workdir
 * patch           - Patch Linux kernel source
@@ -14,7 +14,7 @@ Targes:
 * menuconfig      - make menuconfig
 * diffconfig      - Show kernel config diff from default config
 * build           - Build Linux kernel
-* modules_install - 
+* modules_install - Copy modules to a temporary directory
 * external        - Build and install out-of-tree modules
 * install         - Install other files
 
@@ -26,8 +26,11 @@ Option tasks:
 
 Environment variables:
 RPI_BUILD_DIR     - rpi-build root directory
+                    Default: ~/rpi-build
 WORKDIR           - Working directory used when building
+                    Default: ./workdir
 DOWNLOAD_DIR      - Directory for downloaded files
+                    Default: $RPI_BUILD_DIR/downloads
 
 
 Admin mode:
@@ -36,6 +39,8 @@ rpi-build admin <action>
 Actions:
 * addlib[gitrepo] - Add library with git
                     Short gitrepo assumes Github: addlib[notro/fbtft-build]
+* update          - Update git repos in RPI_BUILD_DIR
+
 """
 end
 
