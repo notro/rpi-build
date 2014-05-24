@@ -42,6 +42,10 @@ target :menuconfig => :config do
     raise 'missing ncurses library. apt-get install libncurses5-dev'
   end
   sh make 'menuconfig'
+  if File.mtime(workdir 'linux/.config') > File.mtime(workdir 'config')
+    # .config has change, mark config target as changed
+    touch workdir 'config'
+  end
 end
 
 
@@ -52,20 +56,25 @@ end
 
 desc "Build kernel => #{Rake::Task[:config].comment}"
 target :build => :config do
-  rm FileList["#{workdir}/{pre_install,post_install}"]
+  rm FileList["#{workdir}/{pre-install,post-install}"]
   cpus = `nproc`.strip.to_i
   sh make "-j#{cpus*2}"
 end
 
 
 target :modules_install => :build do
+  d = workdir 'modules'
+  mkdir d unless File.directory? d
   unless `cd #{workdir 'linux'} && scripts/config --state MODULES`.strip == 'n'
-    d = workdir 'modules'
-    mkdir d unless File.directory? d
     sh make "INSTALL_MOD_PATH=#{d} modules_install"
   else
     puts 'Loadable kernel module support is disabled'
+    # for rpi-update
+    mod = workdir 'modules/lib/modules'
+    mkdir_p mod unless File.directory? mod
+    touch "#{mod}/dummy"
   end
+  sh make "INSTALL_MOD_PATH=#{d} firmware_install"
 end
 
 
