@@ -254,7 +254,7 @@ module Rake
       bestmatch[:file]
     end
 
-    def patch(file)
+    def patch(file, usegit=nil)
       dir = File.dirname caller[0][/[^:]*/]
       task :patch do
         print "Trying '#{file}'..."
@@ -265,7 +265,13 @@ module Rake
         else
           puts
         end
-        sh "cd #{workdir 'linux'} && git apply -v #{File.expand_path f}"
+        if usegit
+          # doesn't always work without a git repository. Does work when 'git init' is done
+          sh "cd #{workdir 'linux'} && git apply -v #{File.expand_path f}"
+        else
+          sh "cd #{workdir 'linux'} && patch -p1 < #{File.expand_path f}"
+        end
+        Readme.patch "* #{f}\n"
       end
     end
 
