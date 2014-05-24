@@ -7,7 +7,9 @@ task :environment
 task :deferred => :environment
 
 desc "Fetch"
-target :fetch
+target :fetch do
+  Readme.clear 'source'
+end
 
 
 desc "Unpack => #{Rake::Task[:fetch].comment}"
@@ -22,6 +24,7 @@ target :patch => :unpack do
   ENV['LINUX_KERNEL_VERSION'] = "#{LinuxVersion.parse_makefile fn}"
 #ENV['LINUX_KERNEL_VERSION'] = "3.10.3"
   puts "Linux kernel version: #{ENV['LINUX_KERNEL_VERSION']}"
+  Readme.clear 'patch'
 end
 
 
@@ -77,6 +80,8 @@ target :install => :external do
 
   fl = FileList["#{workdir}/{pre_install,post_install}"]
   cp fl, dst unless fl.empty?
+
+  Readme.write
 end
 
 

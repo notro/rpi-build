@@ -102,6 +102,108 @@ def post_install(str)
   File.open(workdir('post_install'), 'a') { |file| file.write str }
 end
 
+module Readme
+  def self.w(name, str, mode='a')
+    File.open(workdir("Readme.#{name}"), mode) { |file| file.write str }
+  end
+
+  def self.r(name)
+    fn = workdir "Readme.#{name}"
+    return File.read fn if File.exists? fn
+    'None'
+  end
+
+  def self.clear(name=nil)
+    if name
+      names = [name] 
+    else
+      names = %w[desc source patch]
+    end
+    names.each do |name|
+      fn = workdir "Readme.#{name}"
+      Rake::FileUtilsExt.rm fn if File.exists? fn
+    end
+  end
+
+  def self.desc(str)
+    self.w 'desc', str, 'w'
+  end
+
+  def self.source(str)
+    self.w 'source', str
+  end
+
+  def self.patch(str)
+    self.w 'patch', str
+  end
+
+  def self.diffconfig
+    diff = `cd #{workdir 'linux'} && scripts/diffconfig .config.defconfig .config`
+    added = []
+    changed = []
+    deleted = []
+    diff.each_line do |line|
+      m = line.match(/ (\w+) (\S+) \-> (\S+)/)
+      if m
+        if m[2] == 'n'
+          added << "* #{m[1]} #{m[3]}"
+        elsif m[3] == 'n'
+          deleted << "* #{m[1]}"
+        else
+          changed << "* #{line.strip}"
+        end
+      else
+        m = line.match(/([\+\-])(\w+) (\w)/)
+        raise "can't parse diffconfig line: #{line}" unless m
+        if m[1] == '+'
+          unless m[3] == 'n'
+            added << "* #{m[2]} #{m[3]}"
+          end
+        else
+          deleted << "* #{m[2]} #{m[3]}" unless m[3] == 'n'
+        end
+      end
+    end
+    added.sort!
+    changed.sort!
+    deleted.sort!
+    str = ''
+    str << "\n\nAdded:\n" unless added.empty?
+    str << added.join("\n")
+    str << "\n\nChanged:\n" unless changed.empty?
+    str << changed.join("\n")
+    str << "\n\nDeleted:\n" unless deleted.empty?
+    str << deleted.join("\n")
+    diff + "\n\n" + str
+  end
+
+  def self.write
+    str = """heading
+----------
+
+#{self.r 'desc'}
+
+Install
+-------
+
+Sources
+-------
+#{self.r 'source'}
+
+Patches
+--------
+#{self.r 'patch'}
+
+Kernel config
+-------------
+Default config: #{ENV['LINUX_DEFCONFIG']}
+
+#{self.diffconfig}
+"""
+    File.open(workdir('out/README.md'), 'w') { |file| file.write str }
+  end
+end
+
 module Rake
 
   class Application
@@ -280,7 +382,9 @@ module Rake
       t = file dst do
         sh "wget --progress=dot:mega -O '#{dst}' '#{src}'"
       end
-      task :fetch => dst
+      target :fetch => dst do |t|
+        Readme.source "* #{src}\n"
+      end
       t
     end
 
