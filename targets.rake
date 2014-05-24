@@ -57,6 +57,14 @@ end
 desc "Build kernel => #{Rake::Task[:config].comment}"
 target :build => :config do
   rm FileList["#{workdir}/{pre-install,post-install}"]
+
+  post_install <<EOM
+if [ -d ${FW_REPOLOCAL}/firmware ]; then
+        echo "     /lib/firmware"
+        cp -R "${FW_REPOLOCAL}/firmware/"* /lib/firmware/
+fi
+EOM
+
   cpus = `nproc`.strip.to_i
   sh make "-j#{cpus*2}"
 end
