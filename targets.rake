@@ -97,12 +97,20 @@ target :upload => :release
 #task :archive => :install
 
 
-desc "Install using rpi-update locally (only on the Pi)"
 target 'rpi-update' => :install do
-  puts "sudo UPDATE_SELF=0 SKIP_DOWNLOAD=1 SKIP_REPODELETE=1 SKIP_BACKUP=1 FW_REPOLOCAL=#{workdir 'out'} rpi-update \"#{Time.now}\""
+  cmd = "sudo UPDATE_SELF=0 SKIP_DOWNLOAD=1 SKIP_REPODELETE=1 SKIP_BACKUP=1 FW_REPOLOCAL=#{workdir 'out'} rpi-update \"#{Time.now}\""
+  if uname_m == 'armv6l'
+    if File.mtime('/usr/bin/rpi-build') < Time.new(2014, 4, 16)
+      puts "Update rpi-update to ensure FW_REPOLOCAL support:"
+      sh "sudo wget https://raw.github.com/Hexxeh/rpi-update/master/rpi-update -O /usr/bin/rpi-update && sudo chmod +x /usr/bin/rpi-update"
+      puts
+    end
+    sh cmd
+  else
+    puts "\nUse this command on the Pi with adjusted FW_REPOLOCAL is you have it connected through NFS or similar."
+    puts "Make sure rpi-update is more recent than 2014-04-15 for FW_REPOLOCAL support.\n\n"
+    puts "----"
+    puts cmd
+    puts "----\n\n"
+  end
 end
-
-# => sudo UPDATE_SELF=0 SKIP_DOWNLOAD=1 SKIP_REPODELETE=1 SKIP_BACKUP=1 FW_REPOLOCAL=/home/pi/repos/rpi-build/workdir/out rpi-update "2014-05-18 00:02:23 +0200"
-
-# Testing
-# sudo UPDATE_SELF=0 SKIP_DOWNLOAD=1 SKIP_REPODELETE=1 SKIP_BACKUP=1 FW_REPOLOCAL=/home/pi/work/repos/rpi-build/workdir/out rpi-update $(date --rfc-3339 seconds)
