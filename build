@@ -95,11 +95,11 @@ def make(target='', pre='')
 end
 
 def pre_install(str)
-  File.open(workdir('pre_install'), 'a') { |file| file.write str }
+  File.open(workdir('pre-install'), 'a') { |file| file.write str }
 end
 
 def post_install(str)
-  File.open(workdir('post_install'), 'a') { |file| file.write str }
+  File.open(workdir('post-install'), 'a') { |file| file.write str }
 end
 
 module Readme

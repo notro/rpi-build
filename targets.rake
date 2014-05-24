@@ -78,7 +78,7 @@ target :install => :external do
   rm_rf dst
   mkdir_p dst
 
-  fl = FileList["#{workdir}/{pre_install,post_install}"]
+  fl = FileList["#{workdir}/{pre-install,post-install}"]
   cp fl, dst unless fl.empty?
 
   Readme.write
