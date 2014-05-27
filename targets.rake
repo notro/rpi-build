@@ -27,8 +27,8 @@ end
 
 #target :config => b.name do
 target :config => :patch do
-  raise "missing environment variable LINUX_DEFCONFIG" unless ENV['LINUX_DEFCONFIG']
-  sh "#{make ENV['LINUX_DEFCONFIG']}"
+  raise "missing environment variable LINUX_DEFCONFIG" unless VAR['LINUX_DEFCONFIG']
+  sh "#{make VAR['LINUX_DEFCONFIG']}"
   cp workdir('linux/.config'), workdir('linux/.config.defconfig')
 end
 

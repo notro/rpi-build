@@ -279,23 +279,6 @@ module Rake
 
   module DSL
 
-    def env_store(name, &block)
-      unless ENV[name]
-        fn = workdir "#{name}.variable"
-        if File.exists? fn
-          ENV[name] = File.read fn
-          op = '='
-        else
-          ENV[name] = block.call(self)
-          File.open(fn, 'w') { |file| file.write(ENV[name]) }
-          op = '<='
-        end
-      else
-        op = '=='
-      end
-      puts "#{name} #{op} '#{ENV[name]}'"
-    end
-
     def find_patch_file(fn, ver, dir)
       [workdir(fn), "#{dir}/patches/#{fn}"].each { |f| return f if File.file? f }
 
@@ -320,7 +303,7 @@ module Rake
       dir = File.dirname caller[0][/[^:]*/]
       task :patch do
         print "Trying '#{file}'..."
-        f = find_patch_file file, ENV['LINUX_KERNEL_VERSION'], dir
+        f = find_patch_file file, VAR['LINUX_KERNEL_VERSION'], dir
         if File.zero? f
           puts " skipped"
           next
@@ -403,11 +386,9 @@ module Rake
 
     def github_tarball(repo, symlink, env_name=nil)
       env_name ||= repo.gsub(/[\/\-]/, '_').upcase
-      ENV["#{env_name}_BRANCH"] ||= 'master'
-      env_store "#{env_name}_SHA" do
-        github_get_head(repo, ENV["#{env_name}_BRANCH"])
-      end
-      sha = ENV["#{env_name}_SHA"]
+      VAR["#{env_name}_BRANCH"] ||= 'master'
+      VAR["#{env_name}_SHA"] ||= github_get_head(repo, VAR["#{env_name}_BRANCH"])
+      sha = VAR["#{env_name}_SHA"]
       saveas = "#{repo.gsub '/', '-'}-#{sha}.tar.gz"
 
       dl = download "https://github.com/#{repo}/archive/#{sha}.tar.gz", saveas
