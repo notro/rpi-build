@@ -96,18 +96,41 @@ end
 
 
 target :readme => :install do
+  VAR['FW_REPO'] ||= File.expand_path('rpi-firmware') if File.exists? 'rpi-firmware/.git'
+  VAR['FW_BRANCH'] ||= 'master'
+  raise 'missing FW_REPO' unless VAR['FW_REPO']
+  raise "not a git repo: #{VAR['FW_REPO']}" unless File.exists? "#{VAR['FW_REPO']}/.git"
+
+  Git.verbose = Rake.application.options.trace
+  git = Git.new VAR['FW_REPO'], VAR['FW_BRANCH']
+  git.check
+  VAR['FW_URL'] ||= `cd #{VAR['FW_REPO']} && git ls-remote --get-url`.gsub(/.git$/, '')
+  VAR['FW_SHORT_REPO'] ||= URI.parse(VAR['FW_URL']).path.gsub(/^\//, '')
+  ENV['KERNEL_RELEASE'] ||= `#{make('kernelrelease')}`.strip
+
   Readme.write
 end
 
 
-target :release => :readme
+target :commit => :readme do
+  raise "missing COMMIT_MESSAGE" unless VAR['COMMIT_MESSAGE']
+  sh "rm -rf #{VAR['FW_REPO']}/*"
+  sh "cp -a #{workdir 'out'}/* #{VAR['FW_REPO']}"
+  Git.verbose = Rake.application.options.trace
+  git = Git.new VAR['FW_REPO'], VAR['FW_BRANCH']
+  git.commit_all VAR['COMMIT_MESSAGE']
+end
 
 
-target :upload => :release
-
-
-#desc "Archive firmware"
-#task :archive => :install
+target :push => :commit do
+  if $logfile
+    puts "\n\nWon't push when logging to file, in case username and password is asked for\n\n"
+  else
+    Git.verbose = Rake.application.options.trace
+    git = Git.new VAR['FW_REPO'], VAR['FW_BRANCH']
+    git.push
+  end
+end
 
 
 target 'rpi-update' => :install do

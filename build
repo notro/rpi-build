@@ -20,6 +20,8 @@ require 'json'
 require 'rake'
 require 'tempfile'
 
+require_relative 'git'
+
 
 def info(msg)
   $stdout.puts msg

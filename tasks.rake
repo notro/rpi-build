@@ -18,6 +18,8 @@ Targets:
 * external        - Build and install out-of-tree modules
 * install         - Install files to workdir 'out'
 * readme          - Create README.md
+* commit          - Commit kernel and firmware
+* push            - Push commit(s)
 
 Option tasks:
 * cwd             - Use current directory as workdir
