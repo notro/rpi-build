@@ -16,7 +16,8 @@ Targets:
 * build           - Build Linux kernel
 * modules_install - Copy modules to a temporary directory
 * external        - Build and install out-of-tree modules
-* install         - Install other files
+* install         - Install files to workdir 'out'
+* readme          - Create README.md
 
 Option tasks:
 * cwd             - Use current directory as workdir

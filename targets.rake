@@ -6,17 +6,14 @@ task :environment
 # deferred task creation
 task :deferred => :environment
 
-desc "Fetch"
 target :fetch do
   Readme.clear 'source'
 end
 
 
-desc "Unpack => #{Rake::Task[:fetch].comment}"
 target :unpack => :fetch
 
 
-desc "Patch kernel => #{Rake::Task[:unpack].comment}"
 target :patch => :unpack do
   fn = workdir 'linux/Makefile'
   raise "Kernel Makefile is missing: #{fn}" unless File.exists? fn
@@ -28,7 +25,6 @@ target :patch => :unpack do
 end
 
 
-desc "Configure kernel"
 #target :config => b.name do
 target :config => :patch do
   raise "missing environment variable LINUX_DEFCONFIG" unless ENV['LINUX_DEFCONFIG']
@@ -86,7 +82,6 @@ target :modules_install => :build do
 end
 
 
-desc "Build and install out-of-tree modules"
 target :external => :modules_install
 
 
@@ -97,16 +92,17 @@ target :install => :external do
 
   fl = FileList["#{workdir}/{pre-install,post-install}"]
   cp fl, dst unless fl.empty?
+end
 
+
+target :readme => :install do
   Readme.write
 end
 
 
-desc "rpi-update: Commit files"
-target :release => :install
+target :release => :readme
 
 
-desc "rpi-update: Push changes"
 target :upload => :release
 
 
