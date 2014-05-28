@@ -79,6 +79,12 @@ class VAR
     self.write var, value
   end
 
+  def delete(var)
+    ENV.delete var
+    fn = workdir "#{var}.variable"
+    File.unlink fn if File.exists? fn
+  end
+
   def default(var, &block)
     raise "block missing" unless block_given?
     @@defaults[var] = block
@@ -167,38 +173,36 @@ def post_install(str)
 end
 
 module Readme
-  def self.w(name, str, mode='a')
-    File.open(workdir("Readme.#{name}"), mode) { |file| file.write str }
-  end
-
-  def self.r(name)
-    fn = workdir "Readme.#{name}"
-    return File.read fn if File.exists? fn
-    'None'
-  end
-
-  def self.clear(name=nil)
-    if name
-      names = [name] 
+  def self.method_missing(method, *args, &block)
+    if block_given?
+      VAR.default "README_#{method}", block
+    elsif method =~ /.*=$/
+      VAR["README_#{method}".chop] = args.join
     else
-      names = %w[desc source patch]
-    end
-    names.each do |name|
-      fn = workdir "Readme.#{name}"
-      Rake::FileUtilsExt.rm fn if File.exists? fn
+      VAR["README_#{method}"]
     end
   end
 
-  def self.desc(str)
-    self.w 'desc', str, 'w'
+  def self.clear(name)
+    VAR.delete "README_#{name}"
   end
 
-  def self.source(str)
-    self.w 'source', str
+  def self.source(str=nil)
+    VAR["README_source"] ||= ''
+    if str.nil?
+      VAR["README_source"]
+    else
+      VAR["README_source"] += str
+    end
   end
 
-  def self.patch(str)
-    self.w 'patch', str
+  def self.patch(str=nil)
+    VAR["README_patch"] ||= ''
+    if str.nil?
+      VAR["README_patch"]
+    else
+      VAR["README_patch"] += str
+    end
   end
 
   def self.diffconfig
@@ -210,7 +214,7 @@ module Readme
       m = line.match(/ (\w+) (\S+) \-> (\S+)/)
       if m
         if m[2] == 'n'
-          added << "* #{m[1]} #{m[3]}"
+          added << "* #{m[1]}=#{m[3]}"
         elsif m[3] == 'n'
           deleted << "* #{m[1]}"
         else
@@ -221,7 +225,7 @@ module Readme
         raise "can't parse diffconfig line: #{line}" unless m
         if m[1] == '+'
           unless m[3] == 'n'
-            added << "* #{m[2]} #{m[3]}"
+            added << "* #{m[2]}=#{m[3]}"
           end
         else
           deleted << "* #{m[2]} #{m[3]}" unless m[3] == 'n'
@@ -238,33 +242,11 @@ module Readme
     str << changed.join("\n")
     str << "\n\nDeleted:\n" unless deleted.empty?
     str << deleted.join("\n")
-    diff + "\n\n" + str
+    "```text\n" + diff + "\n```\n\n" + str
   end
 
   def self.write
-    str = """heading
-----------
-
-#{self.r 'desc'}
-
-Install
--------
-
-Sources
--------
-#{self.r 'source'}
-
-Patches
---------
-#{self.r 'patch'}
-
-Kernel config
--------------
-Default config: #{ENV['LINUX_DEFCONFIG']}
-
-#{self.diffconfig}
-"""
-    File.open(workdir('out/README.md'), 'w') { |file| file.write str }
+    File.open(workdir('out/README.md'), 'w') { |file| file.write VAR['README_all'] }
   end
 end
 
@@ -393,7 +375,7 @@ module Rake
       sha = VAR["#{env_name}_SHA"]
       saveas = "#{repo.gsub '/', '-'}-#{sha}.tar.gz"
 
-      dl = download "https://github.com/#{repo}/archive/#{sha}.tar.gz", saveas
+      dl = download "https://github.com/#{repo}/archive/#{sha}.tar.gz", saveas, repo
 
       un = unpack saveas, symlink
       un.enhance [dl.name]
@@ -421,14 +403,14 @@ module Rake
       url = "#{repo};a=snapshot;h=#{ref};sf=tbz2"
       saveas = "#{repo}-#{ref}.tar.bz2".gsub(/.+:\/\//, '').gsub(/[^A-Za-z\d\._\-]/, '-')
 
-      dl = download url, saveas
+      dl = download url, saveas, repo
 
       un = unpack saveas, symlink
       un.enhance [dl.name]
       return dl, un
     end
 
-    def download(src, saveas=nil)
+    def download(src, saveas=nil, desc=nil)
       saveas ||= File.basename(src)
       dst = download_dir saveas
 
@@ -436,7 +418,11 @@ module Rake
         sh "wget --progress=dot:mega -O '#{dst}' '#{src}'"
       end
       target :fetch => dst do |t|
-        Readme.source "* #{src}\n"
+        if desc
+          Readme.source "* [#{desc}](#{src})\n"
+        else
+          Readme.source "* #{src}\n"
+        end
       end
       t
     end

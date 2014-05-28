@@ -104,9 +104,41 @@ target :readme => :install do
   Git.verbose = Rake.application.options.trace
   git = Git.new VAR['FW_REPO'], VAR['FW_BRANCH']
   git.check
-  VAR['FW_URL'] ||= `cd #{VAR['FW_REPO']} && git ls-remote --get-url`.gsub(/.git$/, '')
+  VAR['FW_URL'] ||= `cd #{VAR['FW_REPO']} && git ls-remote --get-url`.gsub(/.git$/, '').strip
   VAR['FW_SHORT_REPO'] ||= URI.parse(VAR['FW_URL']).path.gsub(/^\//, '')
   ENV['KERNEL_RELEASE'] ||= `#{make('kernelrelease')}`.strip
+
+  Readme.install ||= """
+```text
+sudo REPO_URI=#{VAR['FW_URL']}#{VAR['FW_BRANCH'] != 'master' ? (' BRANCH=' + VAR['FW_BRANCH']) : ''} rpi-update
+```
+"""
+  Readme.all ||= """#{VAR['FW_SHORT_REPO']}
+==========
+
+#{Readme.desc}
+
+Install
+-------
+#{Readme.install}
+#{Readme.body}
+
+Sources
+-------
+#{Readme.source.empty? ? 'None' : Readme.source}
+
+Patches
+--------
+#{Readme.patch.empty? ? 'None' : Readme.patch}
+
+Kernel config
+-------------
+Default config: #{VAR['LINUX_DEFCONFIG']}
+
+#{Readme.diffconfig}
+
+#{Readme.footer}
+"""
 
   Readme.write
 end
@@ -116,6 +148,7 @@ target :commit => :readme do
   raise "missing COMMIT_MESSAGE" unless VAR['COMMIT_MESSAGE']
   sh "rm -rf #{VAR['FW_REPO']}/*"
   sh "cp -a #{workdir 'out'}/* #{VAR['FW_REPO']}"
+  cp workdir('build.log'), VAR['FW_REPO'] if File.exists? workdir('build.log')
   Git.verbose = Rake.application.options.trace
   git = Git.new VAR['FW_REPO'], VAR['FW_BRANCH']
   git.commit_all VAR['COMMIT_MESSAGE']
