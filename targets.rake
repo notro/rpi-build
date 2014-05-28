@@ -172,7 +172,7 @@ end
 
 
 target 'rpi-update' => :install do
-  cmd = "sudo UPDATE_SELF=0 SKIP_DOWNLOAD=1 SKIP_REPODELETE=1 SKIP_BACKUP=1 FW_REPOLOCAL=#{workdir 'out'} rpi-update \"#{Time.now}\""
+  cmd = "sudo UPDATE_SELF=0 SKIP_DOWNLOAD=1 SKIP_REPODELETE=1 FW_REPOLOCAL=#{workdir 'out'} rpi-update \"#{Time.now}\""
   if uname_m == 'armv6l'
     if File.mtime('/usr/bin/rpi-build') < Time.new(2014, 4, 16)
       puts "Update rpi-update to ensure FW_REPOLOCAL support:"
@@ -181,7 +181,7 @@ target 'rpi-update' => :install do
     end
     sh cmd
   else
-    puts "\nUse this command on the Pi with adjusted FW_REPOLOCAL is you have it connected through NFS or similar."
+    puts "\nUse this command on the Pi with adjusted FW_REPOLOCAL if you have it connected through NFS or similar."
     puts "Make sure rpi-update is more recent than 2014-04-15 for FW_REPOLOCAL support.\n\n"
     puts "----"
     puts cmd
