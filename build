@@ -58,13 +58,13 @@ class VAR
     end
     value = self.read var
     unless value == nil
-      info "#{var} <= #{value}"
+      debug "#{var} <= #{value}"
       ENV[var] = value
       return value
     end
     if @@defaults.key? var
       value = @@defaults[var].call
-      info "#{var} ?= #{value}"
+      debug "#{var} ?= #{value}"
       ENV[var] = value
       self.write var, value
     else
@@ -74,7 +74,7 @@ class VAR
   end
 
   def []=(var, value)
-    info "#{var} = #{value}"
+    debug "#{var} = #{value}"
     ENV[var] = value
     self.write var, value
   end
