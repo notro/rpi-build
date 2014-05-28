@@ -264,7 +264,7 @@ module Rake
   module DSL
 
     def find_patch_file(fn, ver, dir)
-      [workdir(fn), "#{dir}/patches/#{fn}"].each { |f| return f if File.file? f }
+      [workdir(fn), download_dir(fn), "#{dir}/patches/#{fn}"].each { |f| return f if File.file? f }
 
       fl = FileList["#{workdir fn}/*"] + FileList["#{dir}/patches/#{fn}/*"]
       raise "can't find patch '#{fn}'" if fl.empty?
