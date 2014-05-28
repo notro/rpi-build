@@ -90,6 +90,10 @@ target :install => :external do
   rm_rf dst
   mkdir_p dst
 
+  version = `strings #{workdir 'linux/arch/arm/boot/Image'} | grep "Linux version"`.strip
+  sh "mkdir -p #{dst}/extra"
+  File.open("#{dst}/extra/version", 'w') { |file| file.write version }
+
   fl = FileList["#{workdir}/{pre-install,post-install}"]
   cp fl, dst unless fl.empty?
 end
