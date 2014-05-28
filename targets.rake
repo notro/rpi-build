@@ -148,6 +148,7 @@ target :commit => :readme do
   raise "missing COMMIT_MESSAGE" unless VAR['COMMIT_MESSAGE']
   sh "rm -rf #{VAR['FW_REPO']}/*"
   sh "cp -a #{workdir 'out'}/* #{VAR['FW_REPO']}"
+  sh "rm -rf #{VAR['FW_REPO']}/modules/*/{source,build}"
   cp workdir('build.log'), VAR['FW_REPO'] if File.exists? workdir('build.log')
   Git.verbose = Rake.application.options.trace
   git = Git.new VAR['FW_REPO'], VAR['FW_BRANCH']
