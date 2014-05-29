@@ -300,7 +300,11 @@ module Rake
         else
           sh "cd #{workdir 'linux'} && patch -p1 #{opts} < #{File.expand_path f}"
         end
+
+# remove the RPI_BUILD_DIR part
         Readme.patch "* #{f}\n"
+
+
       end
     end
 
