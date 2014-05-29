@@ -34,8 +34,8 @@ end
 
 
 target :menuconfig => :config do
-  if `ldconfig -p | grep ncurses`.strip.empty?
-    raise 'missing ncurses library. apt-get install libncurses5-dev'
+  if !File.exists? '/usr/include/curses.h'
+    raise 'ERROR: missing ncurses library. apt-get install libncurses5-dev'
   end
   sh make 'menuconfig'
   if File.mtime(workdir 'linux/.config') > File.mtime(workdir 'config')
