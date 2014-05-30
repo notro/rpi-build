@@ -22,7 +22,6 @@ Targets:
 * push            - Push commit(s)
 
 Option tasks:
-* cwd             - Use current directory as workdir
 * use[library]    - Use library (Rakefile)
 * clean           - Clean workdir
 * log             - Redirect output to build.log
@@ -49,7 +48,7 @@ end
 
 desc "Clean workdir"
 task :clean do
-  rm_r workdir
+  rm_rf Rake.application.workdir
 end
 
 desc "Set which library to use (Rakefile)"
@@ -57,28 +56,19 @@ task :use, [:library] do |t, args|
   raise "missing library argument to task 'use' (e.g. use[fbtft-build])" if args.library.empty?
   fn = File.join ENV["RPI_BUILD_DIR"], args.library, 'Rakefile'
   raise "can't find library #{args.library} (#{fn})" unless File.exists? fn
-  ENV['WORKDIR'] ||= File.join Dir.pwd, 'workdir'
   Dir.chdir File.dirname fn
-end
-
-desc "Set WORKDIR to the current working directory (pwd)"
-task :cwd do
-  if ENV['WORKDIR']
-    puts "cwd: WORKDIR already set, ignoring (cwd must be the first task)"
-  else
-    ENV['WORKDIR'] = Dir.pwd
-  end
 end
 
 desc "Redirect output to build.log"
 task :log do
   $stderr = $stdout
 
-  $logfile = Tempfile.open(['rpi-build', '.log'])
-  puts "Temporary logfile: #{$logfile.path}"
-  $logfile.puts "Start: #{Time.now}\n\n"
-  $logfile.puts "Commandline arguments: #{ARGV.join ' '}\n\n"
-  STDOUT.reopen $logfile
-  STDERR.reopen $logfile
+  logfile = Tempfile.open(['rpi-build', '.log'])
+  puts "Temporary logfile: #{logfile.path}"
+  logfile.puts "Start: #{Time.now}\n\n"
+  logfile.puts "Commandline arguments: #{ARGV.join ' '}\n\n"
+  STDOUT.reopen logfile
+  STDERR.reopen logfile
+  Rake.application.logfile = logfile
 end
 
