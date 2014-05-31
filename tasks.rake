@@ -1,3 +1,5 @@
+require 'tempfile'
+
 # If specified on the command line, these tasks are run before loading the rakefile
 
 task :default => :usage
