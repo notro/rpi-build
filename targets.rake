@@ -166,7 +166,7 @@ end
 
 target 'rpi-update' => :install do
   cmd = "sudo UPDATE_SELF=0 SKIP_DOWNLOAD=1 SKIP_REPODELETE=1 FW_REPOLOCAL=#{workdir 'out'} rpi-update \"#{Time.now}\""
-  if uname_m == 'armv6l'
+  if rpi?
     if File.mtime('/usr/bin/rpi-update') < Time.new(2014, 4, 16)
       puts "Update rpi-update to ensure FW_REPOLOCAL support:"
       sh "sudo wget https://raw.github.com/Hexxeh/rpi-update/master/rpi-update -O /usr/bin/rpi-update && sudo chmod +x /usr/bin/rpi-update"

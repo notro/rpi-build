@@ -12,9 +12,13 @@ def uname_m
   @uname_m ||= `uname -m`.strip
 end
 
+def rpi?
+  uname_m == 'armv6l'
+end
+
 def cross_compile(name='CROSS_COMPILE')
   ENV['CROSS_COMPILE'] ||= 'tools/arm-bcm2708/arm-bcm2708-linux-gnueabi/bin/arm-bcm2708-linux-gnueabi-'
-  if uname_m == 'armv6l'
+  if rpi?
     ''
   else
     (name ? "#{name}=" : '') + workdir(ENV['CROSS_COMPILE'])
