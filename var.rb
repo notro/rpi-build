@@ -4,57 +4,69 @@ class VAR
   @@defaults = {}
 
   class << self
-  def read(var)
-    fn = workdir "#{var}.variable"
-    if File.exists? fn
-      File.read fn
-    else
-      nil
+  def [](name)
+    if ENV.key? name
+      debug "#{name} == #{ENV[name]}"
+      return ENV[name]
     end
-  end
-
-  def write(var, value)
-    fn = workdir "#{var}.variable"
-    File.open(fn, 'w') { |file| file.write value }
-  end
-
-  def [](var)
-    if ENV.key? var
-      debug "#{var} == #{ENV[var]}"
-      return ENV[var]
-    end
-    value = self.read var
-    unless value == nil
-      debug "#{var} <= #{value}"
-      ENV[var] = value
+    value = self.read name
+    unless value.nil?
+      debug "#{name} <= #{value}"
+      ENV[name] = value
       return value
     end
-    if @@defaults.key? var
-      value = @@defaults[var].call
-      debug "#{var} ?= #{value}"
-      ENV[var] = value
-      self.write var, value
+    if @@defaults.key? name
+      value = @@defaults[name].call
+      debug "#{name} ?= #{value}"
+      ENV[name] = value
     else
-      debug "#{var} (not set)"
+      debug "#{name} (not set)"
       nil
     end
   end
 
-  def []=(var, value)
-    debug "#{var} = #{value}"
-    ENV[var] = value
-    self.write var, value
+  def []=(name, value)
+    debug "#{name} = #{value}"
+    ENV[name] = value
+    self.write name, value
   end
 
-  def delete(var)
-    ENV.delete var
-    fn = workdir "#{var}.variable"
-    File.unlink fn if File.exists? fn
+  def store(name)
+    self[name] &&= self[name]
   end
 
-  def default(var, &block)
+  def key?(name)
+    ENV.key?(name) || @@defaults.key?(name) || File.exists?(self.fn(name))
+  end
+
+  def delete(name)
+    ENV.delete name
+    File.unlink self.fn(name) if File.exists? self.fn(name)
+  end
+
+  def default(name, &block)
     raise "block missing" unless block_given?
-    @@defaults[var] = block
+    @@defaults[name] = block
+  end
+
+  def delete_default(name)
+    @@defaults.delete name
+  end
+
+  def fn(name)
+    workdir "#{name}.variable"
+  end
+
+  def read(name)
+    if File.exists? self.fn(name)
+      File.read self.fn(name)
+    else
+      nil
+    end
+  end
+
+  def write(name, value)
+    File.open(self.fn(name), 'w') { |file| file.write value.to_s }
   end
   end
 end
