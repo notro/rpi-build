@@ -2,7 +2,7 @@
 module Readme
   def self.method_missing(method, *args, &block)
     if block_given?
-      VAR.default "README_#{method}", block
+      VAR.default "README_#{method}", &block
     elsif method =~ /.*=$/
       VAR["README_#{method}".chop] = args.join
     else

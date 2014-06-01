@@ -1,11 +1,5 @@
 # targets (or stages)
 
-# Set up environment variables
-task :environment
-
-# deferred task creation
-task :deferred => :environment
-
 target :fetch do
   Readme.clear 'source'
 end
@@ -19,13 +13,11 @@ target :patch => :unpack do
   raise "Kernel Makefile is missing: #{fn}" unless File.exists? fn
   # this is used by the patch target
   ENV['LINUX_KERNEL_VERSION'] = "#{LinuxVersion.parse_makefile fn}"
-#ENV['LINUX_KERNEL_VERSION'] = "3.10.3"
   puts "Linux kernel version: #{ENV['LINUX_KERNEL_VERSION']}"
   Readme.clear 'patch'
 end
 
 
-#target :config => b.name do
 target :config => :patch do
   raise "missing environment variable LINUX_DEFCONFIG" unless VAR['LINUX_DEFCONFIG']
   sh "#{make VAR['LINUX_DEFCONFIG']}"
@@ -36,7 +28,7 @@ end
 target :menuconfig => :config do
   sh make 'menuconfig'
   if File.mtime(workdir 'linux/.config') > File.mtime(workdir 'config')
-    # .config has change, mark config target as changed
+    # .config has changed, mark config target as changed
     touch workdir 'config'
   end
 end
@@ -60,6 +52,7 @@ EOM
 
   cpus = `nproc`.strip.to_i
   sh make "-j#{cpus*2}"
+  VAR['KERNEL_RELEASE'] = `#{make('kernelrelease')}`.strip
 end
 
 
@@ -105,16 +98,18 @@ target :readme => :install do
   Git.verbose = Rake.application.options.trace
   git = Git.new VAR['FW_REPO'], VAR['FW_BRANCH']
   git.check
-  VAR['FW_URL'] ||= `cd #{VAR['FW_REPO']} && git ls-remote --get-url`.gsub(/.git$/, '').strip
-  VAR['FW_SHORT_REPO'] ||= URI.parse(VAR['FW_URL']).path.gsub(/^\//, '')
-  ENV['KERNEL_RELEASE'] ||= `#{make('kernelrelease')}`.strip
+  # use ENV to prevent the variables from being stored
+  ENV['FW_URL'] = `cd #{VAR['FW_REPO']} && git ls-remote --get-url`.gsub(/.git$/, '').strip unless VAR.key? 'FW_URL'
+  ENV['FW_SHORT_REPO'] = URI.parse(ENV['FW_URL']).path.gsub(/^\//, '') unless VAR.key? 'FW_SHORT_REPO'
 
-  Readme.install ||= """
+  ENV['README_desc'] = "Linux kernel release #{VAR['KERNEL_RELEASE']} for the Raspberry Pi." unless VAR.key? 'README_desc'
+  ENV['README_install'] = """
 ```text
 sudo REPO_URI=#{VAR['FW_URL']}#{VAR['FW_BRANCH'] != 'master' ? (' BRANCH=' + VAR['FW_BRANCH']) : ''} rpi-update
 ```
-"""
-  Readme.all ||= """#{VAR['FW_SHORT_REPO']}
+""" unless VAR.key? 'README_install'
+
+  ENV['README_all'] = """#{VAR['FW_SHORT_REPO']}
 ==========
 
 #{Readme.desc}
@@ -122,6 +117,7 @@ sudo REPO_URI=#{VAR['FW_URL']}#{VAR['FW_BRANCH'] != 'master' ? (' BRANCH=' + VAR
 Install
 -------
 #{Readme.install}
+
 #{Readme.body}
 
 Sources
@@ -139,7 +135,7 @@ Default config: #{VAR['LINUX_DEFCONFIG']}
 #{Readme.diffconfig}
 
 #{Readme.footer}
-"""
+""" unless VAR.key? 'README_all'
 
   Readme.write
 end
