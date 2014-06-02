@@ -90,7 +90,8 @@ end
 
 
 target :readme => :install do
-  VAR['FW_REPO'] ||= File.expand_path('rpi-firmware') if File.exists? 'rpi-firmware/.git'
+  fn = File.join Rake.application.original_dir, 'rpi-firmware'
+  VAR['FW_REPO'] ||= fn if File.exists? "#{fn}/.git"
   VAR['FW_BRANCH'] ||= 'master'
   raise 'missing FW_REPO' unless VAR['FW_REPO']
   raise "not a git repo: #{VAR['FW_REPO']}" unless File.exists? "#{VAR['FW_REPO']}/.git"
