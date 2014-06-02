@@ -136,10 +136,11 @@ module Rake
       return dl, un
     end
 
-    def gitweb_tarball(repo, symlink, ref=nil)
-      ref ||= 'refs/heads/master'
-      url = "#{repo};a=snapshot;h=#{ref};sf=tbz2"
-      saveas = "#{repo}-#{ref}.tar.bz2".gsub(/.+:\/\//, '').gsub(/[^A-Za-z\d\._\-]/, '-')
+    def gitweb_tarball(repo, symlink, env_name)
+      VAR["#{env_name}_BRANCH"] ||= 'master'
+      VAR["#{env_name}_SHA"] ||= gitweb_get_head repo, VAR["#{env_name}_BRANCH"]
+      url = "#{repo};a=snapshot;h=#{VAR["#{env_name}_SHA"]};sf=tbz2"
+      saveas = "#{repo}-#{VAR["#{env_name}_SHA"]}.tar.bz2".gsub(/.+:\/\//, '').gsub(/[^A-Za-z\d\._\-]/, '-')
 
       dl = download url, saveas, repo
 
