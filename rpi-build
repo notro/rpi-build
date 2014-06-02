@@ -72,7 +72,7 @@ unless File.exists? fn
   puts "\nInstalling rpi-build to #{ENV["RPI_BUILD_DIR"]}:"
   `mkdir -p #{ENV["RPI_BUILD_DIR"]}`
   puts "\nrpi-build"
-  `cd #{ENV["RPI_BUILD_DIR"]} && git clone https://github.com/notro/rpi-build bin && cd bin && git checkout next`
+  `cd #{ENV["RPI_BUILD_DIR"]} && git clone https://github.com/notro/rpi-build bin`
   puts "\nstdlib"
   `cd #{ENV["RPI_BUILD_DIR"]} && git clone https://github.com/notro/rpi-build-stdlib stdlib`
   puts "\nDone.\n\n"
