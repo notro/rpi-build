@@ -17,10 +17,10 @@ def rpi?
 end
 
 def cross_compile(name='CROSS_COMPILE')
-  ENV['CROSS_COMPILE'] ||= 'tools/arm-bcm2708/arm-bcm2708-linux-gnueabi/bin/arm-bcm2708-linux-gnueabi-'
   if rpi?
     ''
   else
+    ENV['CROSS_COMPILE'] ||= 'tools/arm-bcm2708/arm-bcm2708-linux-gnueabi/bin/arm-bcm2708-linux-gnueabi-'
     (name ? "#{name}=" : '') + workdir(ENV['CROSS_COMPILE'])
   end
 end
