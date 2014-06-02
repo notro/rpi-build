@@ -60,7 +60,7 @@ unless File.exists? fn
     puts cmd
     print "Install dependencies? [Y/n] "
     STDOUT.flush
-    answer = gets.chomp
+    answer = $stdin.gets.chomp
     if ['', 'y', 'yes'].include? answer.downcase
       ok = system cmd
       exit $?.to_i unless ok
