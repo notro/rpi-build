@@ -15,10 +15,10 @@ Targets:
 * config          - Configure Linux kernel
 * menuconfig      - make menuconfig
 * diffconfig      - Show kernel config diff from default config
-* build           - Build Linux kernel
-* modules_install - Copy modules to a temporary directory
+* kbuild          - Build Linux kernel
+* kmodules        - Copy modules and device firmware to a temporary directory
 * external        - Build and install out-of-tree modules
-* install         - Install files to workdir 'out'
+* build           - Build all
 * readme          - Create README.md
 * commit          - Commit kernel and firmware
 * push            - Push commit(s)

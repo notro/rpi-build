@@ -39,8 +39,7 @@ target :diffconfig => :config do
 end
 
 
-desc "Build kernel => #{Rake::Task[:config].comment}"
-target :build => :config do
+target :kbuild => :config do
   rm FileList["#{workdir}/{pre-install,post-install}"]
 
   post_install <<EOM
@@ -56,7 +55,7 @@ EOM
 end
 
 
-target :modules_install => :build do
+target :kmodules => :kbuild do
   d = workdir 'modules'
   mkdir d unless File.directory? d
   unless `cd #{workdir 'linux'} && scripts/config --state MODULES`.strip == 'n'
@@ -72,10 +71,10 @@ target :modules_install => :build do
 end
 
 
-target :external => :modules_install
+target :external => :kmodules
 
 
-target :install => :external do
+target :build => :external do
   dst = workdir 'out'
   rm_rf dst
   mkdir_p dst
@@ -89,7 +88,7 @@ target :install => :external do
 end
 
 
-target :readme => :install do
+target :readme => :build do
   fn = File.join Rake.application.original_dir, 'rpi-firmware'
   VAR['FW_REPO'] ||= fn if File.exists? "#{fn}/.git"
   VAR['FW_BRANCH'] ||= 'master'
@@ -165,7 +164,7 @@ target :push => :commit do
 end
 
 
-target 'rpi-update' => :install do
+target :install => :build do
   cmd = "sudo UPDATE_SELF=0 SKIP_DOWNLOAD=1 SKIP_REPODELETE=1 FW_REPOLOCAL=#{workdir 'out'} rpi-update \"#{Time.now}\""
   if rpi?
     if File.mtime('/usr/bin/rpi-update') < Time.new(2014, 4, 16)
