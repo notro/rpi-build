@@ -41,21 +41,21 @@ module Readme
       m = line.match(/ (\w+) (\S+) \-> (\S+)/)
       if m
         if m[2] == 'n'
-          added << "* #{m[1]}=#{m[3]}"
+          added << "#{m[1]}=#{m[3]}"
         elsif m[3] == 'n'
-          deleted << "* #{m[1]}"
+          deleted << "#{m[1]}=#{m[2]}"
         else
-          changed << "* #{line.strip}"
+          changed << "#{line.strip}"
         end
       else
         m = line.match(/([\+\-])(\w+) (\w)/)
         raise "can't parse diffconfig line: #{line}" unless m
         if m[1] == '+'
           unless m[3] == 'n'
-            added << "* #{m[2]}=#{m[3]}"
+            added << "#{m[2]}=#{m[3]}"
           end
         else
-          deleted << "* #{m[2]} #{m[3]}" unless m[3] == 'n'
+          deleted << "#{m[2]}=#{m[3]}" unless m[3] == 'n'
         end
       end
     end
@@ -63,13 +63,19 @@ module Readme
     changed.sort!
     deleted.sort!
     str = ''
-    str << "\n\nAdded:\n" unless added.empty?
-    str << added.join("\n")
-    str << "\n\nChanged:\n" unless changed.empty?
-    str << changed.join("\n")
-    str << "\n\nDeleted:\n" unless deleted.empty?
-    str << deleted.join("\n")
-    "```text\n" + diff + "\n```\n\n" + str
+    unless added.empty?
+      str << "\n\nAdded:\n"
+      str << "```text\n#{added.join("\n")}\n```\n"
+    end
+    unless changed.empty?
+      str << "\n\nChanged:\n"
+      str << "```text\n#{changed.join("\n")}\n```\n"
+    end
+    unless deleted.empty?
+      str << "\n\nDeleted:\n"
+      str << "```text\n#{deleted.join("\n")}\n```\n"
+    end
+    str
   end
 
   def self.write
