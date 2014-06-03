@@ -1,7 +1,11 @@
 
 module Rake
   class TargetTask < Task
-    # the first dependency is also a special target dependency
+    def marker
+      "#{workdir name}.target"
+    end
+
+    # the first dependency is a special target dependency
     def enhance(deps=nil, &block)
       if deps
           @target_dep = deps[0] if @prerequisites.empty?
@@ -13,7 +17,7 @@ module Rake
 
     # always run when using direct invocation 
     def invoke(*args)
-      out = `rm -vf #{workdir name.to_s}`
+      out = `rm -vf #{marker}`
       debug out
       super
     end
@@ -21,7 +25,7 @@ module Rake
     # stop the invocation chain if timestamp is later than every
     # target in the target dependency chain
     def invoke_with_call_chain(task_args, invocation_chain)
-      super if ! File.exist?(workdir name) or target_dep_timestamp > timestamp
+      super if !File.exist?(marker) or target_dep_timestamp > timestamp
     end
 
     def target_dep_timestamp
@@ -36,8 +40,8 @@ module Rake
     end
 
     def timestamp
-      if File.exist?(workdir name)
-        File.mtime(workdir name.to_s)
+      if File.exist? marker
+        File.mtime marker
       else
         Rake::EARLY
       end
@@ -45,10 +49,10 @@ module Rake
 
     def execute(args=nil)
       super
-      cmd = "touch #{workdir name.to_s}"
+      cmd = "touch #{marker}"
       debug cmd
       `#{cmd}`
-      puts "Target '#{self.name}' done\n\n"
+      puts "Target '#{name}' done\n\n"
     end
   end
 

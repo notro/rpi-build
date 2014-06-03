@@ -27,9 +27,10 @@ end
 
 target :menuconfig => :config do
   sh make 'menuconfig'
-  if File.mtime(workdir 'linux/.config') > File.mtime(workdir 'config')
+  config_fn = Rake.application[:config].marker
+  if File.mtime(workdir 'linux/.config') > File.mtime(config_fn)
     # .config has changed, mark config target as changed
-    touch workdir 'config'
+    touch config_fn
   end
 end
 
