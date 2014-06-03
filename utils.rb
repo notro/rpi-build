@@ -49,3 +49,12 @@ def http_get(url)
   end
   r.read
 end
+
+def ssh(command, opts='', pre='')
+  raise 'missing SSHIP' unless ENV['SSHIP']
+  ENV['SSHUSER'] ||= 'pi'
+  ENV['SSHPASS'] ||= 'raspberry'
+  cmd = "#{pre}sshpass -e ssh -o LogLevel=quiet -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no #{opts} #{ENV['SSHUSER']}@#{ENV['SSHIP']} \"#{command}\""
+  info cmd
+  `#{cmd}`
+end

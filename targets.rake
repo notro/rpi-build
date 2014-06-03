@@ -164,20 +164,38 @@ target :push => :commit do
 end
 
 
-target :install => :build do
-  cmd = "sudo UPDATE_SELF=0 SKIP_DOWNLOAD=1 SKIP_REPODELETE=1 FW_REPOLOCAL=#{workdir 'out'} rpi-update \"#{Time.now}\""
-  if rpi?
+target :archive => :build do
+  sh "cd #{workdir 'out'}; tar -zcf #{workdir 'archive.tar.gz'} *"
+end
+
+
+target :transfer => :archive do
+  ssh "rm -rf rpi-build-archive; mkdir rpi-build-archive"
+  ssh "cd rpi-build-archive; tar zxvf -", '', "cat #{workdir 'archive.tar.gz'} | "
+end
+
+
+VAR.default('UPDATE_SELF') { '0' }
+VAR.default('SKIP_BACKUP') { '1' }
+VAR.default('SKIP_REPODELETE') { '0' }
+VAR.default('RPI_UPDATE_OPTS') { "UPDATE_SELF=#{VAR['UPDATE_SELF']} SKIP_BACKUP=#{VAR['SKIP_BACKUP']} SKIP_REPODELETE=#{VAR['SKIP_REPODELETE']} SKIP_DOWNLOAD=1" }
+if rpi?
+  target :install => :build do
     if File.mtime('/usr/bin/rpi-update') < Time.new(2014, 4, 16)
-      puts "Update rpi-update to ensure FW_REPOLOCAL support:"
+      info "Update rpi-update to ensure FW_REPOLOCAL support:"
       sh "sudo wget https://raw.github.com/Hexxeh/rpi-update/master/rpi-update -O /usr/bin/rpi-update && sudo chmod +x /usr/bin/rpi-update"
-      puts
+      info ''
     end
-    sh cmd
-  else
-    puts "\nUse this command on the Pi with adjusted FW_REPOLOCAL if you have it connected through NFS or similar."
-    puts "Make sure rpi-update is more recent than 2014-04-15 for FW_REPOLOCAL support.\n\n"
-    puts "----"
-    puts cmd
-    puts "----\n\n"
+    sh "sudo #{VAR['RPI_UPDATE_OPTS']} FW_REPOLOCAL=#{workdir 'out'} rpi-update '#{Time.now}'"
+  end
+else
+  target :install => :transfer do
+    res = ssh "stat --printf=%Y /usr/bin/rpi-update"
+    if res.to_i < Time.new(2014, 4, 16).to_i
+      info "Update rpi-update to ensure FW_REPOLOCAL support:"
+      ssh "sudo wget https://raw.github.com/Hexxeh/rpi-update/master/rpi-update -O /usr/bin/rpi-update && sudo chmod +x /usr/bin/rpi-update"
+    end
+    res = ssh "sudo #{VAR['RPI_UPDATE_OPTS']} FW_REPOLOCAL=rpi-build-archive rpi-update '#{Time.now}' 1>&2"
+    info res
   end
 end

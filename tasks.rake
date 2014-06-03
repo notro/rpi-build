@@ -22,6 +22,9 @@ Targets:
 * readme          - Create README.md
 * commit          - Commit kernel and firmware
 * push            - Push commit(s)
+* archive         - Archive workdir out
+* transfer        - Copy archive to machine (needs SSHIP)
+* install         - Install
 
 Option tasks:
 * use[library]    - Use library (Rakefile)
