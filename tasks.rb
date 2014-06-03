@@ -80,6 +80,11 @@ module Rake
       self
     end
 
+    def clear_actions
+      @invoke_action = nil
+      super
+    end
+
     def invoke(*args)
       if @invoke_action
         # use application.trace in > 0.9.2
