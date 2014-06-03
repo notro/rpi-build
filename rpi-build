@@ -52,6 +52,13 @@ unless File.exists? fn
     apt << 'libncurses5-dev'
   end
 
+  begin
+    `sshpass -V`
+  rescue
+    missing << '- sshpass'
+    apt << 'sshpass'
+  end
+
   unless missing.empty?
     puts "\nMissing dependencies:"
     puts missing.join "\n"
