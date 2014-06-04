@@ -31,6 +31,16 @@ Option tasks:
 * clean           - Clean workdir
 * log             - Redirect output to build.log
 
+rpi-build is built on top of Rake, and has much of the same behaviour.
+Targets, releases and option tasks are Rake tasks.
+They are run in the order they are given on the command line,
+except for option tasks which are run before any other tasks.
+
+Some Rake options:
+-h      - Help
+--trace - Be more verbose
+          Print full stack trace on exceptions
+
 Environment variables:
 RPI_BUILD_DIR     - rpi-build root directory
                     Default: ~/rpi-build
