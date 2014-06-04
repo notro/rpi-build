@@ -63,17 +63,17 @@ class Git
   end
 
   def last_commit
-    git("log --pretty=%H ...refs/heads/#{branch}^").strip
+    git("log -1 --format=%H").strip
   end
 
   def last_remote_commit
-    git("ls-remote origin -h refs/heads/#{branch}").strip.split.first
+    @last_remote_commit ||= git("ls-remote origin -h refs/heads/#{branch}").strip.split.first
   end
 
   def commits_ahead
     remote = last_remote_commit
     return 0 if remote.nil?
-    commits = git "log --pretty=%H #{@branch}"
+    commits = git "log --format=%H #{branch}"
     count = 0
     i = 0
     commits.split("\n").each do |commit|
