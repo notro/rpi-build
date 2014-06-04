@@ -154,7 +154,15 @@ module Rake
       dst = download_dir saveas
 
       t = file dst do
-        sh "wget --progress=dot:mega -O '#{dst}' '#{src}'"
+        begin
+          sh "wget --progress=dot:mega -O '#{dst}' '#{src}'"
+        rescue
+          if File.size(dst) == 0
+            info "Clean up empty file:"
+            sh "rm -f #{dst}"
+          end
+          raise
+        end
       end
       target :fetch => dst do |t|
         if desc
