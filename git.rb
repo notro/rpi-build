@@ -15,10 +15,10 @@ class Git
     checkout branch
   end
 
-  def git(cmd)
-    puts "cd #{@path} && git #{cmd}" if @verbose
+  def git(cmd, talkative=false)
+    puts "cd #{@path} && git #{cmd}" if (talkative || @verbose)
     res = `cd #{@path} && git #{cmd}`
-    puts res if (@verbose || $?.to_i != 0)
+    puts res if (talkative || @verbose || $?.to_i != 0)
     res
   end
 
@@ -36,7 +36,7 @@ class Git
   end
 
   def create_branch(name)
-    git "branch #{name}"
+    git "branch #{name}", true
   end
 
   def checkout(ref)
@@ -45,11 +45,11 @@ class Git
 
   def commit_all(msg)
     git 'add .'
-    git "commit -a -m \"#{msg}\""
+    git "commit -a -m \"#{msg}\"", true
   end
 
   def push
-    git "push origin #{branch}"
+    git "push origin #{branch}", true
   end
 
   # no tracked file(s) has changed
