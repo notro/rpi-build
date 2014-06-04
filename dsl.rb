@@ -1,7 +1,7 @@
 require 'json'
 
 def github_get_head(repo, branch='master')
-  url = "https://api.github.com/repos/#{repo}/git/refs/heads/master"
+  url = "https://api.github.com/repos/#{repo}/git/refs/heads/#{branch}"
   j = JSON.parse http_get url
   begin
     sha = j['object']['sha']
