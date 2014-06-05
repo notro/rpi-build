@@ -93,5 +93,11 @@ class TestVar < MiniTest::Unit::TestCase
     assert !VAR.key?('testvar')
   end
 
-
+  def test_load_all
+    VAR['testvar'] = 'load_all'
+    ENV.delete 'testvar'
+    assert_nil ENV['testvar']
+    VAR.load_all
+    assert_equal ENV['testvar'], 'load_all'
+  end
 end

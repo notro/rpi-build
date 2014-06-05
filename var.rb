@@ -53,6 +53,10 @@ class VAR
     @@defaults.delete name
   end
 
+  def load_all
+    Dir[workdir '*.variable'].each { |fn| VAR[File.basename fn, '.variable'] }
+  end
+
   def fn(name)
     workdir "#{name}.variable"
   end
