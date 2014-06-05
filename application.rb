@@ -38,6 +38,7 @@ module Rake
           info `mkdir -vp #{@download_dir}`.strip
           load File.join File.dirname(__FILE__), 'targets.rake'
           load_rakefile
+          VAR.load_all
         end
         top_level
       end
