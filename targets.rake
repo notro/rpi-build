@@ -180,9 +180,9 @@ end
 
 VAR.default('UPDATE_SELF') { '0' }
 VAR.default('SKIP_BACKUP') { '1' }
-VAR.default('SKIP_REPODELETE') { '0' }
 VAR.default('RPI_UPDATE_OPTS') { "UPDATE_SELF=#{VAR['UPDATE_SELF']} SKIP_BACKUP=#{VAR['SKIP_BACKUP']} SKIP_REPODELETE=#{VAR['SKIP_REPODELETE']} SKIP_DOWNLOAD=1" }
 if rpi?
+  VAR.default('SKIP_REPODELETE') { '1' }
   target :install => :build do
     if File.mtime('/usr/bin/rpi-update') < Time.new(2014, 4, 16)
       info "Update rpi-update to ensure FW_REPOLOCAL support:"
@@ -192,6 +192,7 @@ if rpi?
     sh "sudo #{VAR['RPI_UPDATE_OPTS']} FW_REPOLOCAL=#{workdir 'out'} rpi-update '#{Time.now}'"
   end
 else
+  VAR.default('SKIP_REPODELETE') { '0' }
   target :install => :transfer do
     res = ssh "stat --printf=%Y /usr/bin/rpi-update"
     if res.to_i < Time.new(2014, 4, 16).to_i
