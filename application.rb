@@ -34,8 +34,8 @@ module Rake
           }
           exit if @top_level_tasks.empty?
           info "Workdir: #{@workdir}"
-          `mkdir -p #{@workdir}`
-          `mkdir -p #{@download_dir}`
+          info `mkdir -vp #{@workdir}`.strip
+          info `mkdir -vp #{@download_dir}`.strip
           load File.join File.dirname(__FILE__), 'targets.rake'
           load_rakefile
         end

@@ -1,7 +1,7 @@
 require 'open-uri'
 
 def info(msg)
-  $stdout.puts msg
+  $stdout.puts msg unless msg.empty?
 end
 
 def debug(msg)
