@@ -109,7 +109,9 @@ target :readme => :build do
 sudo REPO_URI=#{VAR['FW_URL']}#{VAR['FW_BRANCH'] != 'master' ? (' BRANCH=' + VAR['FW_BRANCH']) : ''} rpi-update
 ```
 """ unless VAR.key? 'README_install'
-
+  unless VAR.key? 'README_footer'
+    ENV['README_footer'] = '<p align="center">Built with <a href="https://github.com/notro/rpi-build/wiki">rpi-build</a></p>'
+  end
   ENV['README_all'] = """#{VAR['FW_SHORT_REPO']}
 ==========
 
