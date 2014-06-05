@@ -94,7 +94,7 @@ target :readme => :build do
   VAR['FW_REPO'] ||= fn if File.exists? "#{fn}/.git"
   VAR['FW_BRANCH'] ||= 'master'
   raise 'missing FW_REPO' unless VAR['FW_REPO']
-  raise "not a git repo: #{VAR['FW_REPO']}" unless File.exists? "#{VAR['FW_REPO']}/.git"
+  raise "not a git repo: #{File.expand_path VAR['FW_REPO']}" unless File.exists? "#{VAR['FW_REPO']}/.git"
 
   Git.verbose = Rake.application.options.trace
   git = Git.new VAR['FW_REPO'], VAR['FW_BRANCH']
