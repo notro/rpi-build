@@ -28,4 +28,6 @@ require_relative 'readme'
 $LOAD_PATH.unshift ENV["RPI_BUILD_DIR"]
 
 Rake.application = Rake::Rpibuild.new ENV["RPI_BUILD_DIR"], ENV['WORKDIR'], ENV['DOWNLOAD_DIR']
+# searching messes up workdir, and it's not easy to solve since the use[] task changes current directory
+Rake.application.options.nosearch = true
 Rake.application.run
