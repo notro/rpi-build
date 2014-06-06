@@ -41,7 +41,7 @@ def http_get(url)
   begin
     r = open url
   rescue
-    puts "could not get ${url}"
+    puts "could not get #{url}"
     raise
   end
   if r.meta['X-RateLimit-Remaining'] == "0"
