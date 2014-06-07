@@ -58,3 +58,18 @@ def ssh(command, opts='', pre='')
   info cmd
   `#{cmd}`
 end
+
+def insert_before(fn, search, insert)
+  s = File.read fn
+  i = s.index search
+  raise "insert_before: can't find #{search.inspect}" unless i
+  s = s.insert i, insert
+  File.write fn, s
+end
+
+def insert_after(fn, search, insert)
+  s = File.read fn
+  raise "insert_after: can't find #{search.inspect}" unless s.index search
+  s.gsub! search, search + insert
+  File.write fn, s
+end
