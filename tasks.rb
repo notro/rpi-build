@@ -25,7 +25,14 @@ module Rake
     # stop the invocation chain if timestamp is later than every
     # target in the target dependency chain
     def invoke_with_call_chain(task_args, invocation_chain)
-      super if !File.exist?(marker) or target_dep_timestamp > timestamp
+      if !File.exist?(marker) or target_dep_timestamp > timestamp
+        pre = Rake.application.lookup "#{name}_pre"
+        pre.invoke if pre
+        super
+        post = Rake.application.lookup "#{name}_post"
+        post.invoke if post
+        puts "Target '#{name}' done\n\n"
+      end
     end
 
     def target_dep_timestamp
@@ -52,7 +59,6 @@ module Rake
       cmd = "touch #{marker}"
       debug cmd
       `#{cmd}`
-      puts "Target '#{name}' done\n\n"
     end
   end
 
