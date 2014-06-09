@@ -73,3 +73,10 @@ def insert_after(fn, search, insert)
   s.gsub! search, search + insert
   File.write fn, s
 end
+
+def replace(fn, search, replac)
+  s = File.read fn
+  raise "replace: can't find #{search.inspect}" unless s.index search
+  s.gsub! search, replac
+  File.write fn, s
+end
