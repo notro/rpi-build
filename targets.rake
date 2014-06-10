@@ -6,15 +6,69 @@ end
 
 
 target :unpack => :fetch
+task :unpack_post do
+  next unless VAR['DIFFPREP']
+  VAR.store 'DIFFPREP'
+  info "Prepare '#{VAR['DIFFPREP']}' for diff"
+  VAR['DIFFPREP'].split(',').each do |d|
+    path = workdir d
+    raise "DIFFPREP: No such directory '#{path}'" unless Dir.exists? path
+    unless Git.is_repo? path
+      info "WARNING: No .gitignore in #{path}" unless File.exists? "#{path}/.gitignore"
+      sh "cd #{path} && git init"
+    end
+    repo = Git.new path
+    repo.verbose = true
+    raise "DIFFPREP: Branch 'rpi-build-unpack' already exists for '#{repo.path}'" if repo.branch? 'rpi-build-unpack'
+    repo.git 'checkout -b rpi-build-unpack'
+    unless repo.pristine?
+      repo.commit_all 'diff for unpack stage'
+    else
+      info "DIFFPREP: Nothing to commit for repo #{repo.path}"
+    end
+  end
+end
+
+
+target :diff, [:against] => [:unpack] do |t, args|
+  raise "diffprep is not set" unless VAR['DIFFPREP']
+  against = args.against ? args.against : 'unpack'
+  raise "diff: unknown target '#{against}'" unless %w[unpack patch].include? against
+
+  VAR['DIFFPREP'].split(',').each do |d|
+    repo = Git.new workdir d
+    repo.verbose = true
+    fn = workdir "#{d}-#{against}.patch"
+    puts repo.git "diff rpi-build-#{against} > #{fn}"
+    info "No diff against '#{against}'\n\n" if File.size(fn) == 0
+  end
+end
 
 
 target :patch => :unpack do
   fn = workdir 'linux/Makefile'
   raise "Kernel Makefile is missing: #{fn}" unless File.exists? fn
-  # this is used by the patch target
+  # this can be used by the patch target to determine which patchfile version to use
   ENV['LINUX_KERNEL_VERSION'] = "#{LinuxVersion.parse_makefile fn}"
   puts "Linux kernel version: #{ENV['LINUX_KERNEL_VERSION']}"
   Readme.clear 'patch'
+end
+task :patch_post do
+  next unless VAR['DIFFPREP']
+  info "Prepare #{VAR['DIFFPREP']} for diff"
+  VAR['DIFFPREP'].split(',').each do |d|
+    path = workdir d
+    raise "DIFFPREP: #{path} is not a git repo" unless Git.is_repo? path
+    repo = Git.new path, 'rpi-build-unpack'
+    repo.verbose = true
+    raise "DIFFPREP: branch '#{rpi-build-patch}' already exists for '#{repo.path}'" if repo.branch? 'rpi-build-patch'
+    repo.git 'checkout -b rpi-build-patch'
+    unless repo.pristine?
+      repo.commit_all 'diff for patch stage'
+    else
+      info "DIFFPREP: Nothing to commit for repo #{repo.path}"
+    end
+  end
 end
 
 
@@ -150,9 +204,13 @@ target :commit => :readme do
   sh "cp -a #{workdir 'out'}/* #{VAR['FW_REPO']}"
   sh "rm -rf #{VAR['FW_REPO']}/modules/*/{source,build}"
   cp workdir('build.log'), VAR['FW_REPO'] if File.exists? workdir('build.log')
-  Git.verbose = Rake.application.options.trace
-  git = Git.new VAR['FW_REPO'], VAR['FW_BRANCH']
-  git.commit_all VAR['COMMIT_MESSAGE']
+  Git.verbose = true
+  repo = Git.new VAR['FW_REPO'], VAR['FW_BRANCH']
+  unless repo.pristine?
+    repo.commit_all VAR['COMMIT_MESSAGE']
+  else
+    info "nothing to commit for repo #{repo.path}"
+  end
 end
 
 
@@ -160,7 +218,7 @@ target :push => :commit do
   if $logfile
     puts "\n\nWon't push when logging to file, in case username and password is asked for\n\n"
   else
-    Git.verbose = Rake.application.options.trace
+    Git.verbose = true
     git = Git.new VAR['FW_REPO'], VAR['FW_BRANCH']
     git.push
   end

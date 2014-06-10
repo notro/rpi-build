@@ -25,11 +25,17 @@ Targets:
 * archive         - Archive workdir out
 * transfer        - Copy archive to machine (needs SSHIP)
 * install         - Install
+* diff[against]   - Create source code diff files (diffprep has to be run)
+                    Filename: <dir>-<against>.patch in workdir
+                    'against' can be 'unpack' or 'patch'. Default is 'unpack'.
 
 Option tasks:
 * use[library]    - Use library (Rakefile)
 * clean           - Clean workdir
 * log             - Redirect output to build.log
+* diffprep[dirs]  - Prepare source for the diff target
+                    'dirs' is a comma separated list of source dirs,
+                    e.g. diffprep[linux,u-boot]. Default is 'linux'
 
 rpi-build is built on top of Rake, and has much of the same behaviour.
 Targets, releases and option tasks are Rake tasks.
@@ -85,5 +91,9 @@ task :log do
   STDOUT.reopen logfile
   STDERR.reopen logfile
   Rake.application.logfile = logfile
+end
+
+task :diffprep, [:dirs] do |t, args|
+  ENV['DIFFPREP'] = args.dirs.empty? ? 'linux' : args.dirs.join(',')
 end
 
