@@ -62,7 +62,7 @@ module Rake
 
     def patch(file, opts='', usegitapply=false)
       dir = File.dirname caller[0][/[^:]*/]
-      task :patch do
+      target :patch do
         print "Trying '#{file}'..."
         f = find_patch_file file, VAR['LINUX_KERNEL_VERSION'], dir
         if File.zero? f
@@ -117,7 +117,7 @@ module Rake
         cmd << make('oldconfig', "yes \"\" | ")
       end
 
-      task :config do
+      target :config do
         cmd.each { |c| sh c }
       end
     end
@@ -205,7 +205,7 @@ module Rake
         # a marker to show that we have unpacked
         touch workdir(dst_name)
       end
-      task :unpack => workdir(dst_name)
+      target :unpack => workdir(dst_name)
       t
     end
 
@@ -215,12 +215,12 @@ module Rake
           sh "git clone #{src} #{saveas}"
         end
       end
-      task :fetch => download_dir(saveas)
+      target :fetch => download_dir(saveas)
 
       l = file workdir(saveas) do
         ln_s download_dir(saveas), workdir(saveas)
       end
-      task :unpack => workdir(saveas)
+      target :unpack => workdir(saveas)
 
       return d, l
     end
