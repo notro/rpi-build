@@ -104,5 +104,13 @@ module Rake
       puts "Release: #{self.name}"
       super
     end
+
+    class << self
+      def define_task(*args, &block)
+        t = Rake.application.define_task(self, *args, &block)
+        raise "ReleaseTask: taskname already in use: '#{t.name}'" unless ReleaseTask === t
+        t
+      end
+    end
   end
 end
