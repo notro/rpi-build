@@ -4,14 +4,14 @@ def github_get_head(repo, branch='master')
   url = "https://api.github.com/repos/#{repo}/git/refs/heads/#{branch}"
   j = JSON.parse http_get url
   begin
-    sha = j['object']['sha']
+    ref = j['object']['sha']
   rescue
     puts "\n\n\n\n===>"
     puts j.inspect
     puts "<===\n\n    ERROR: bad response from #{url}\n\n"
     raise
   end
-  sha
+  ref
 end
 
 def gitweb_get_head(repo, branch='master')
@@ -125,11 +125,11 @@ module Rake
     def github_tarball(repo, symlink, env_name=nil)
       env_name ||= repo.gsub(/[\/\-]/, '_').upcase
       VAR["#{env_name}_BRANCH"] ||= 'master'
-      VAR["#{env_name}_SHA"] ||= github_get_head(repo, VAR["#{env_name}_BRANCH"])
-      sha = VAR["#{env_name}_SHA"]
-      saveas = "#{repo.gsub '/', '-'}-#{sha}.tar.gz"
+      VAR["#{env_name}_REF"] ||= github_get_head(repo, VAR["#{env_name}_BRANCH"])
+      ref = VAR["#{env_name}_REF"]
+      saveas = "#{repo.gsub '/', '-'}-#{ref}.tar.gz"
 
-      dl = download "https://github.com/#{repo}/archive/#{sha}.tar.gz", saveas, repo
+      dl = download "https://github.com/#{repo}/archive/#{ref}.tar.gz", saveas, repo
 
       un = unpack saveas, symlink
       un.enhance [dl.name]
@@ -138,9 +138,9 @@ module Rake
 
     def gitweb_tarball(repo, symlink, env_name)
       VAR["#{env_name}_BRANCH"] ||= 'master'
-      VAR["#{env_name}_SHA"] ||= gitweb_get_head repo, VAR["#{env_name}_BRANCH"]
-      url = "#{repo};a=snapshot;h=#{VAR["#{env_name}_SHA"]};sf=tbz2"
-      saveas = "#{repo}-#{VAR["#{env_name}_SHA"]}.tar.bz2".gsub(/.+:\/\//, '').gsub(/[^A-Za-z\d\._\-]/, '-')
+      VAR["#{env_name}_REF"] ||= gitweb_get_head repo, VAR["#{env_name}_BRANCH"]
+      url = "#{repo};a=snapshot;h=#{VAR["#{env_name}_REF"]};sf=tbz2"
+      saveas = "#{repo}-#{VAR["#{env_name}_REF"]}.tar.bz2".gsub(/.+:\/\//, '').gsub(/[^A-Za-z\d\._\-]/, '-')
 
       dl = download url, saveas, repo
 
