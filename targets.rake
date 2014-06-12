@@ -200,12 +200,13 @@ end
 
 target :commit => :readme do
   raise "missing COMMIT_MESSAGE" unless VAR['COMMIT_MESSAGE']
-  sh "rm -rf #{VAR['FW_REPO']}/*"
-  sh "cp -a #{workdir 'out'}/* #{VAR['FW_REPO']}"
-  sh "rm -rf #{VAR['FW_REPO']}/modules/*/{source,build}"
-  cp workdir('build.log'), VAR['FW_REPO'] if File.exists? workdir('build.log')
+  dst = VAR['FW_REPO']
+  sh "rm -rf #{dst}/*"
+  sh "cp -a #{workdir 'out'}/* #{dst}"
+  sh "rm -rf #{dst}/modules/*/{source,build}"
+  cp workdir('build.log'), "#{dst}/extra" if File.exists? workdir('build.log')
   Git.verbose = true
-  repo = Git.new VAR['FW_REPO'], VAR['FW_BRANCH']
+  repo = Git.new dst, VAR['FW_BRANCH']
   unless repo.pristine?
     repo.commit_all VAR['COMMIT_MESSAGE']
   else
