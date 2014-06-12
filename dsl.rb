@@ -91,9 +91,9 @@ module Rake
       option.each do |k|
         value = ''
         case command
-        when :enable, 'enable','e'
+        when :enable, 'enable', 'y'
           c = '--enable'
-        when :disable, 'disable', 'd'
+        when :disable, 'disable', 'n'
           c = '--disable'
         when :module, 'module', 'm'
           c = '--module'
