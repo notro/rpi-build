@@ -78,7 +78,7 @@ module Rake
           sh "cd #{workdir 'linux'} && patch -p1 #{opts} < #{File.expand_path f}"
         end
 
-# remove the RPI_BUILD_DIR part
+# TODO: remove the RPI_BUILD_DIR part
         Readme.patch "* #{f}\n"
 
 
@@ -155,16 +155,18 @@ module Rake
 
       t = file dst do
         begin
-          sh "wget --progress=dot:mega -O '#{dst}' '#{src}'"
+          sh "wget --no-use-server-timestamps --progress=dot:mega -O '#{dst}' '#{src}'"
         rescue
-          if File.size(dst) == 0
-            info "Clean up empty file:"
-            sh "rm -f #{dst}"
-          end
+          info "\nClean up after failed download:"
+          sh "rm -f #{dst}"
           raise
         end
+        shafile = "#{dst}.sha"
+        if File.exists? shafile
+          sh "cd #{File.dirname shafile} && shasum -c #{File.basename shafile}"
+        end
       end
-      target :fetch => dst do |t|
+      target :fetch => dst do
         if desc
           Readme.source "* [#{desc}](#{src})\n"
         else
