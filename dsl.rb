@@ -50,6 +50,24 @@ def find_patch_file(fn, ver, dir)
   bestmatch[:file]
 end
 
+def findfile(fn)
+  # find directories for required files beneath RPI_BUILD_DIR
+  searchdirs = $LOADED_FEATURES.map{ |f| File.dirname f }.uniq.select{ |d| d.index(ENV['RPI_BUILD_DIR']) == 0 }
+  # add dir of current Rakefile
+  searchdirs << File.dirname(File.expand_path Rake.application.rakefile)
+  searchdirs << workdir
+  searchdirs.reverse!
+  unless @findfile_debug_done
+    debug "findfile searchdirs: #{searchdirs.inspect}"
+    @findfile_debug_done = true
+  end
+  searchdirs.each do |d|
+    f = File.join d, fn
+    return f if File.exists? f
+  end
+  raise "ERROR: Could not find file #{fn.inspect}"
+end
+
 module Rake
   module DSL
     def pre_install(str)
