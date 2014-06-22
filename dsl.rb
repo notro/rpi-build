@@ -54,6 +54,7 @@ def findfile(fn)
   # find directories for required files beneath RPI_BUILD_DIR
   searchdirs = $LOADED_FEATURES.map{ |f| File.dirname f }.uniq.select{ |d| d.index(ENV['RPI_BUILD_DIR']) == 0 }
   # add dir of current Rakefile
+  searchdirs << download_dir
   searchdirs << File.dirname(File.expand_path Rake.application.rakefile)
   searchdirs << workdir
   searchdirs.reverse!
