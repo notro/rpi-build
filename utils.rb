@@ -60,6 +60,7 @@ def ssh(command, opts='', pre='')
 end
 
 def insert_before(fn, search, insert)
+  info "insert_before: #{fn}"
   s = File.read fn
   i = s.index search
   raise "insert_before: can't find #{search.inspect}" unless i
@@ -68,6 +69,7 @@ def insert_before(fn, search, insert)
 end
 
 def insert_after(fn, search, insert)
+  info "insert_after: #{fn}"
   s = File.read fn
   raise "insert_after: can't find #{search.inspect}" unless s.index search
   s.gsub! search, search + insert
@@ -75,6 +77,7 @@ def insert_after(fn, search, insert)
 end
 
 def replace(fn, search, replac)
+  info "replace: #{fn}"
   s = File.read fn
   raise "replace: can't find #{search.inspect}" unless s.index search
   s.gsub! search, replac
