@@ -49,7 +49,7 @@ target :patch => :unpack do
   fn = workdir 'linux/Makefile'
   raise "Kernel Makefile is missing: #{fn}" unless File.exists? fn
   # this can be used by the patch target to determine which patchfile version to use
-  ENV['LINUX_KERNEL_VERSION'] = "#{LinuxVersion.parse_makefile fn}"
+  VAR['LINUX_KERNEL_VERSION'] = "#{LinuxVersion.parse_makefile fn}"
   puts "Linux kernel version: #{ENV['LINUX_KERNEL_VERSION']}"
   Readme.clear 'patch'
 end
