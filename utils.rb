@@ -20,7 +20,11 @@ def cross_compile(name='CROSS_COMPILE')
   if rpi?
     ''
   else
-    ENV['CROSS_COMPILE'] ||= workdir 'tools/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian/bin/arm-linux-gnueabihf-'
+    if uname_m.include? '64'
+      ENV['CROSS_COMPILE'] ||= workdir 'tools/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin/arm-linux-gnueabihf-'
+    else
+      ENV['CROSS_COMPILE'] ||= workdir 'tools/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian/bin/arm-linux-gnueabihf-'
+    end
     (name ? "#{name}=" : '') + ENV['CROSS_COMPILE']
   end
 end
