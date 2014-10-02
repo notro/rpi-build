@@ -233,9 +233,7 @@ end
 
 target :transfer => :archive do
   ssh "rm -rf rpi-build-archive; mkdir rpi-build-archive"
-  raise "sshpass: execution failed, exit code #{$?.exitstatus}" unless $?.success?
   ssh "cd rpi-build-archive; tar zxvf -", '', "cat #{workdir 'archive.tar.gz'} | "
-  raise "sshpass: execution failed, exit code #{$?.exitstatus}" unless $?.success?
 end
 
 
@@ -256,11 +254,9 @@ else
   VAR.default('SKIP_REPODELETE') { '0' }
   target :install => :transfer do
     res = ssh "stat --printf=%Y /usr/bin/rpi-update"
-    raise "sshpass: execution failed, exit code #{$?.exitstatus}" unless $?.success?
     if res.to_i < Time.new(2014, 4, 16).to_i
       info "Update rpi-update to ensure FW_REPOLOCAL support:"
       ssh "sudo wget https://raw.github.com/Hexxeh/rpi-update/master/rpi-update -O /usr/bin/rpi-update && sudo chmod +x /usr/bin/rpi-update"
-      raise "sshpass: execution failed, exit code #{$?.exitstatus}" unless $?.success?
     end
     res = ssh "sudo #{VAR['RPI_UPDATE_OPTS']} FW_REPOLOCAL=rpi-build-archive rpi-update '#{Time.now}' 1>&2"
     info res
