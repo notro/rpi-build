@@ -60,7 +60,9 @@ def ssh(command, opts='', pre='')
   ENV['SSHPASS'] ||= 'raspberry'
   cmd = "#{pre}sshpass -e ssh -o LogLevel=quiet -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no #{opts} #{ENV['SSHUSER']}@#{ENV['SSHIP']} \"#{command}\""
   info cmd
-  `#{cmd}`
+  res = `#{cmd}`
+  raise "sshpass: execution failed, exit code #{$?.exitstatus}" unless $?.success?
+  res
 end
 
 def insert_before(fn, search, insert)
