@@ -97,13 +97,6 @@ end
 target :kbuild => :config do
   rm FileList["#{workdir}/{pre-install,post-install}"]
 
-  post_install <<EOM
-if [ -d ${FW_REPOLOCAL}/firmware ]; then
-        echo "     /lib/firmware"
-        cp -R "${FW_REPOLOCAL}/firmware/"* /lib/firmware/
-fi
-EOM
-
   cpus = `nproc`.strip.to_i
   sh make "-j#{cpus*2}"
   VAR['KERNEL_RELEASE'] = `#{make('kernelrelease')}`.strip
@@ -122,7 +115,6 @@ target :kmodules => :kbuild do
     mkdir_p mod unless File.directory? mod
     touch "#{mod}/dummy"
   end
-  sh make "INSTALL_MOD_PATH=#{d} firmware_install"
 end
 
 
