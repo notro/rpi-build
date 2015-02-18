@@ -254,9 +254,9 @@ else
   VAR.default('SKIP_REPODELETE') { '0' }
   target :install => :transfer do
     res = ssh "stat --printf=%Y /usr/bin/rpi-update"
-    if res.to_i < Time.new(2014, 4, 16).to_i
-      info "Update rpi-update to ensure FW_REPOLOCAL support:"
-      ssh "sudo wget https://raw.github.com/Hexxeh/rpi-update/master/rpi-update -O /usr/bin/rpi-update && sudo chmod +x /usr/bin/rpi-update"
+    if res.to_i < (Time.now - 7*24*60*60).to_i
+      info "Update rpi-update:"
+      ssh "sudo curl -L --output /usr/bin/rpi-update https://raw.githubusercontent.com/Hexxeh/rpi-update/master/rpi-update && sudo chmod +x /usr/bin/rpi-update"
     end
     res = ssh "sudo #{VAR['RPI_UPDATE_OPTS']} FW_REPOLOCAL=rpi-build-archive rpi-update '#{Time.now}' 1>&2"
     info res
