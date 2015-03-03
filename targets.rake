@@ -252,5 +252,6 @@ else
     end
     res = ssh "sudo #{VAR['RPI_UPDATE_OPTS']} FW_REPOLOCAL=rpi-build-archive rpi-update '#{Time.now}' 1>&2"
     info res
+    rm workdir('transfer.target')
   end
 end
