@@ -28,6 +28,8 @@ Targets:
 * diff[against]   - Create source code diff files (diffprep has to be run)
                     Filename: <dir>-<against>.patch in workdir
                     'against' can be 'unpack' or 'patch'. Default is 'unpack'.
+* merge[d1,d2]    - Merge 2 directories for install/commit.
+                    Without arguments, the directory is searched for 'workdir*'
 
 Option tasks:
 * use[library]    - Use library (Rakefile)

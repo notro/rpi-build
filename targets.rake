@@ -255,3 +255,38 @@ else
     rm workdir('transfer.target')
   end
 end
+
+def cp_build_log(src_workdir, dst_workdir)
+  src = File.join(src_workdir, 'build.log')
+  dst = File.join(dst_workdir, 'out/extra', "#{File.basename(src_workdir)}-build.log")
+  if File.exists? src
+    sh "cp #{src} #{dst}"
+  end
+end
+
+target :merge, [:workdir1, :workdir2] do |t, args|
+  basedir = workdir '..'
+  wds = [args.workdir1, args.workdir2].compact
+  if wds.empty?
+    wds = Dir.entries(basedir).select { |entry| (entry[/^workdir.+/]) and File.directory? File.join(basedir, entry) }
+  end
+  info "Merge directories: #{wds.join(',')}"
+  raise "merge target can only merge 2 directories: #{wds.inspect}" unless wds.length == 2
+  wds.map! { |d| File.expand_path(d, basedir) }
+  wds.each { |d| raise "merge target: '#{d}' not a directory" unless File.directory? d }
+  wd1 = wds[0]
+  wd2 = wds[1]
+
+  rm_rf "#{workdir()}"
+  mkdir_p "#{workdir('out')}"
+  sh "cd #{workdir()} && ln -s #{wd1}/firmware firmware"
+  sh "cd #{workdir()} && ln -s #{wd1}/linux linux"
+  sh "cp #{wd1}/*.variable #{workdir()}"
+  sh "cp #{wd1}/*.target #{workdir()}"
+
+  sh "cp -r #{wd1}/out/* #{workdir('/out/')}"
+  cp_build_log wd1, workdir()
+
+  sh "cp -r #{wd2}/out/* #{workdir('/out/')}"
+  cp_build_log wd2, workdir()
+end
