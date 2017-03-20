@@ -155,9 +155,15 @@ target :readme => :build do
 sudo REPO_URI=#{VAR['FW_URL']}#{VAR['FW_BRANCH'] != 'master' ? (' BRANCH=' + VAR['FW_BRANCH']) : ''} rpi-update
 ```
 """ unless VAR.key? 'README_install'
+
   unless VAR.key? 'README_footer'
     ENV['README_footer'] = '<p align="center">Built with <a href="https://github.com/notro/rpi-build/wiki">rpi-build</a></p>'
   end
+
+  unless VAR.key? 'README_defconfig'
+    ENV['README_defconfig'] = "#{VAR['LINUX_DEFCONFIG']}"
+  end
+
   ENV['README_all'] = """#{VAR['FW_SHORT_REPO']}
 ==========
 
@@ -179,7 +185,7 @@ Patches
 
 Kernel config
 -------------
-Default config: #{VAR['LINUX_DEFCONFIG']}
+Default config: #{ENV['README_defconfig']}
 
 #{Readme.diffconfig}
 
